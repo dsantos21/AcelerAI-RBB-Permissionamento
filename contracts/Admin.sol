@@ -22,28 +22,27 @@ import "./AccountIngress.sol";
 
 contract Admin is AdminProxy, AdminList {
 
-    mapping (bytes32 => mapping (address => uint128)) private hasVoted; // 1-based indexing. 0 means non-existent
-    mapping (bytes32 => address[]) private addressList;
-    //mapping (bytes32 => uint128) private votes;
-
     NodeIngress private nodeIngressContract;
     AccountIngress private accountIngressContract;
 
-    //enum TransactionStatus { NONEXISTENT, OPENTOVOTE, CLOSEDTOVOTE }
-    //uint private transactionCount;
+    // TODO: adicionar depois os métodos dos nodes
+    string private constant ADD_ADMIN = "ADD_ADMIN";
+    string private constant REMOVE_ADMIN = "REMOVE_ADMIN";
 
-    enum Operation { ADD_ADMIN, REMOVE_ADMIN, CHANGE_REQUIREMENT, VOTE_FOR_STRUCTURAL_CHANGES }
-    // string private constant ADD_ADMIN = "ADD_ADMIN";
-    // string private constant REMOVE_ADMIN = "REMOVE_ADMIN";
+    string private constant ADD_ADMINS = "ADD_ADMINS"; //é o caso?
 
-    // string private constant ADD_ADMINS = "ADD_ADMINS"; //é o caso?
+    string private constant CHANGE_REQUIREMENT = "CHANGE_REQUIREMENT";
+    string private constant VOTE_FOR_STRUCTURAL_CHANGES = "VOTE_FOR_STRUCTURAL_CHANGES";
 
-    // string private constant CHANGE_REQUIREMENT = "CHANGE_REQUIREMENT";
+    mapping (bytes32 => mapping (address => uint)) private hasVoted; // 1-based indexing. 0 means non-existent
+    mapping (bytes32 => address[]) private addressList;
+    bytes32[] private hashesList;
+    mapping (bytes32 => uint) private indexOfHashesList;
 
     address private votedForStructuralChanges;
 
     bool private qualifiedMajority; // true: qualified majority, greater than 2/3; false: simple majority, greater than 50%;
-    // uint128 private countRequirementChanges;
+    
 
     event Voted(
         bytes32 hash,
@@ -68,7 +67,7 @@ contract Admin is AdminProxy, AdminList {
     }
 
     modifier atLeastOneAdmin() {
-        require(size() == 1, "There must be at least 1 administrator");
+        require(size() > 1, "There must be at least 1 administrator");
         _;
     }
 
@@ -90,7 +89,7 @@ contract Admin is AdminProxy, AdminList {
 
     function setNodeIngressContract (NodeIngress _nodeIngressContract) external {
         require (isVotedForStructuralChanges(msg.sender), "Not permitted");
-        nodeIngressContract = _nodeIngressContract; //5 end migration?
+        nodeIngressContract = _nodeIngressContract;
     }
     
     function revokeAccessToStructuralChanges() public {
@@ -105,15 +104,15 @@ contract Admin is AdminProxy, AdminList {
         return exists(_address);
     }
     
-    function isVotedForStructuralChanges (address _address) public view returns (bool) {
+    function isVotedForStructuralChanges (address _address) public view returns (bool) { //haverá método com votação para zerar esse endereço?
         return _address == votedForStructuralChanges;
     }
 
-    function voteForStructuralChanges (address _address) external onlyAdmin isAdmin(_address) multisigTx(keccak256(abi.encodePacked(Operation.VOTE_FOR_STRUCTURAL_CHANGES, _address))) {
+    function voteForStructuralChanges (address _address) external onlyAdmin isAdmin(_address) multisigTx(keccak256(abi.encodePacked(VOTE_FOR_STRUCTURAL_CHANGES, _address))) {
         votedForStructuralChanges = _address;
     }
 
-    function addAdmin(address _address) external onlyAdmin multisigTx(keccak256(abi.encodePacked(Operation.ADD_ADMIN, _address))) {
+    function addAdmin(address _address) external onlyAdmin multisigTx(keccak256(abi.encodePacked(ADD_ADMIN, _address))) {
         if (msg.sender == _address) {
             emit AdminAdded(false, _address, "Adding own account as Admin is not permitted");
         } else {
@@ -123,7 +122,7 @@ contract Admin is AdminProxy, AdminList {
         }
     }
 
-    function removeAdmin(address _address) external onlyAdmin atLeastOneAdmin multisigTx(keccak256(abi.encodePacked(Operation.REMOVE_ADMIN, _address))) {
+    function removeAdmin(address _address) external onlyAdmin atLeastOneAdmin multisigTx(keccak256(abi.encodePacked(REMOVE_ADMIN, _address))) {
         if (isVotedForStructuralChanges(_address)){
             votedForStructuralChanges = address(0);
         }
@@ -135,8 +134,16 @@ contract Admin is AdminProxy, AdminList {
         return allowlist; // mythx-disable-line SWC-128
     }
 
-    function getAddressListLength(bytes32 hash) public view returns (uint128){
-        return uint128(addressList[hash].length);
+    function getVotedForStructuralChanges() public view returns (address){
+        return votedForStructuralChanges;
+    }
+
+    function getAddressListLength(bytes32 hash) public view returns (uint){
+        return addressList[hash].length;
+    }
+
+    function getHashesList() public view returns (bytes32[] memory){
+        return hashesList;
     }
 
     // Remover?
@@ -144,11 +151,11 @@ contract Admin is AdminProxy, AdminList {
         // addAll(accounts);
     // }
 
-    function changeMajorityRequirement() external onlyAdmin multisigTx(keccak256(abi.encodePacked(Operation.CHANGE_REQUIREMENT, qualifiedMajority))) {
+    function changeMajorityRequirement() external onlyAdmin multisigTx(keccak256(abi.encodePacked(CHANGE_REQUIREMENT, qualifiedMajority))) {
         qualifiedMajority = !qualifiedMajority;
     }
 
-    function isMajorityAchieved(uint128 _votes) private view returns (bool){
+    function isMajorityAchieved(uint _votes) private view returns (bool){
         if (qualifiedMajority) {
             if (_votes > ((size() * 2)/3)) {
                 return true;
@@ -162,46 +169,62 @@ contract Admin is AdminProxy, AdminList {
     // Every time this method is called there will be a check if the majority has been reached,
     // as the majority can be reached after removing an administrator.
     // desta forma o usuario ao realizar uma chamada extra o usuário executa a ação pendente
-    function voteAndVerify(bytes32 hash, address sender) onlyAdmin public returns (bool) {
+    function voteAndVerify(bytes32 hash, address sender) onlyAdmin internal returns (bool) {
         if (hasVoted[hash][sender] == 0) { // 1-based index
+            if(getAddressListLength(hash) == 0) {
+                indexOfHashesList[hash] = hashesList.length;
+                hashesList.push(hash);
+            }
             addressList[hash].push(sender);
-            hasVoted[hash][sender] = uint128(addressList[hash].length);
-            //votes[hash]++;
+            hasVoted[hash][sender] = getAddressListLength(hash);
             emit Voted(hash, true);
         } 
         else {
             emit Voted(hash, false);
-        }//                       votes[hash]
-        return isMajorityAchieved(uint128(addressList[hash].length));
+        }
+        return isMajorityAchieved(getAddressListLength(hash));
     }
 
     function cancelVote(bytes32 hash) onlyAdmin external {
         address sender = msg.sender;
-        uint128 index = hasVoted[hash][sender];
+        uint index = hasVoted[hash][sender];
 
-        if (index > 0 && index <= addressList[hash].length) {
+        if (index > 0 && index <= getAddressListLength(hash)) {
             // move last item into index being vacated (unless we are dealing with last index)
-            if (index != addressList[hash].length) {
-                address lastAddress = addressList[hash][addressList[hash].length - 1];
+            if (index != getAddressListLength(hash)) {
+                address lastAddress = addressList[hash][getAddressListLength(hash) - 1];
                 addressList[hash][index - 1] = lastAddress;
                 hasVoted[hash][lastAddress] = index;
             }
 
             // shrink array
             addressList[hash].pop();
-            hasVoted[hash][sender] = 0;            
-            //votes[hash]--;
+            hasVoted[hash][sender] = 0;
             emit VoteCanceled(hash, true);
+            if(getAddressListLength(hash) == 0){
+                deleteHash(hash);
+            }
         }
         emit VoteCanceled(hash, false);
     }
 
     function deleteHash(bytes32 hash) onlyAdmin private {
-        //votes[hash] = 0;
-        for(uint256 i = 0; i < addressList[hash].length; i++){
+        for(uint i = 0; i < getAddressListLength(hash); i++){
             hasVoted[hash][addressList[hash][i]] = 0;
         }
         delete addressList[hash];
+
+        uint index = indexOfHashesList[hash];
+        uint lastPosition = hashesList.length - 1;
+        if(index != lastPosition) {
+            bytes32 lastHash = hashesList[lastPosition];
+            hashesList[index] = lastHash;
+            indexOfHashesList[lastHash] = index;
+        }
+        hashesList.pop();
+        indexOfHashesList[hash] = 0;
+        // emit informações da transação para o histórico
+        // TODO: contador de transação, nome da operação, endereço? e outros
     }
 }
 
@@ -226,3 +249,15 @@ contract Admin is AdminProxy, AdminList {
 // separar código multisig em outro contrato?
 
 // ALTERAR MIGRATION PARA DEFINIR AS CONSTANTES NODE_CONTRACT E ACCOUNT_CONTRACT NO CONSTRUTOR
+
+// Tirar dúvida
+// Hash collision
+// Alterar nomes de métodos e variáveis
+// Adicionar getters
+// Explicar voteAndVerify
+// Unir com o node
+// Testes manuais e ajustes
+// Testes automáticos e ajustes
+
+// votação em abertas view
+// continuo com o delete hash mas implemento evento retornando 
