@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<AppBar /> matches snapshot 1`] = `
+<WithStyles(ForwardRef(Grid))
+  alignItems="center"
+  className="appBar"
+  container={true}
+  justifyContent="space-between"
+>
+  <WithStyles(ForwardRef(Typography))
+    variant="h1"
+  >
+    Besu Permissioning
+  </WithStyles(ForwardRef(Typography))>
+</WithStyles(ForwardRef(Grid))>
+`;

@@ -29,10 +29,12 @@ contract Admin is AdminProxy, AdminList {
     string private constant ADD_ADMIN = "ADD_ADMIN";
     string private constant REMOVE_ADMIN = "REMOVE_ADMIN";
 
+    string private constant ADD_ADMINS = "ADD_ADMINS"; // é o caso?
+
     string private constant CHANGE_REQUIREMENT = "CHANGE_REQUIREMENT";
     string private constant VOTE_FOR_STRUCTURAL_CHANGES = "VOTE_FOR_STRUCTURAL_CHANGES";
-    //TODO: list of address that voted addressesThatVotedIn
-    mapping (bytes32 => address[]) private addressList; // alterar o hasVoted para indexOfaddressList
+
+    mapping (bytes32 => address[]) private addressList;
     mapping (bytes32 => mapping (address => uint)) private hasVoted; // 1-based indexing. 0 means non-existent
 
     bytes32[] private hashesList;
@@ -60,7 +62,6 @@ contract Admin is AdminProxy, AdminList {
     );
 
     modifier multisigTx(string memory opName, address payload) {
-        // TODO: gethash aqui
         if(voteAndVerify(opName, payload, msg.sender)){
             _;
             finish(opName, payload, msg.sender);
@@ -87,7 +88,7 @@ contract Admin is AdminProxy, AdminList {
         qualifiedMajority = true;
         votedForStructuralChanges = msg.sender;
     }
-    // TODO: colocar o node ingress e account antes do admin no migration
+
     function setAccountIngressContract (AccountIngress _accountIngressContract) external {
         require (isVotedForStructuralChanges(msg.sender), "Not permitted");
         accountIngressContract = _accountIngressContract;
@@ -97,9 +98,8 @@ contract Admin is AdminProxy, AdminList {
         require (isVotedForStructuralChanges(msg.sender), "Not permitted");
         nodeIngressContract = _nodeIngressContract;
     }
-    //fim
     
-    function revokeAccessToStructuralChanges() public { //TODO: votação para revogar o cara que manda em tudo
+    function revokeAccessToStructuralChanges() public {
         require(isVotedForStructuralChanges(msg.sender), "Not permitted");
         votedForStructuralChanges = address(0);
     }
@@ -157,6 +157,11 @@ contract Admin is AdminProxy, AdminList {
         return keccak256(abi.encodePacked(opName, payload));
     }
 
+    // Remover?
+    // function addAdmins(address[] calldata accounts) external onlyAdmin multisigTx(keccak256(abi.encodePacked(ADD_ADMINS, accounts))) {
+        // addAll(accounts);
+    // }
+
     function changeMajorityRequirement() external onlyAdmin multisigTx(CHANGE_REQUIREMENT, address(0)) {
         qualifiedMajority = !qualifiedMajority;
     }
@@ -175,7 +180,7 @@ contract Admin is AdminProxy, AdminList {
     // Every time this method is called there will be a check if the majority has been reached,
     // as the majority can be reached after removing an administrator.
     // desta forma o usuario ao realizar uma chamada extra o usuário executa a ação pendente
-    function voteAndVerify(string memory opName, address payload, address sender) onlyAdmin internal returns (bool) {
+    function voteAndVerify(string memory opName, address payload, address sender) onlyAdmin public returns (bool) { // TODO: colocar internal
         bytes32 hash = getHash(opName, payload);
         if (hasVoted[hash][sender] == 0) { // 1-based index
             if(getAddressListLength(hash) == 0) {

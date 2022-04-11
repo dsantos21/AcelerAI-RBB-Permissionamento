@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<WrongNetwork /> error message matches snapshot 1`] = `
+<Styled(MuiBox)>
+  <WithStyles(ForwardRef(Grid))
+    alignItems="center"
+    container={true}
+  >
+    <Memo(ForwardRef(WarningIcon)) />
+    <WithStyles(ForwardRef(Typography))
+      color="error"
+      variant="body1"
+    >
+      Connect to the network where the contracts are deployed.
+    </WithStyles(ForwardRef(Typography))>
+  </WithStyles(ForwardRef(Grid))>
+  <WithStyles(ForwardRef(Grid))
+    alignItems="center"
+    container={true}
+  >
+    <div
+      className="wrongNetworkMessage"
+    >
+      <WithStyles(ForwardRef(Typography))
+        variant="body1"
+      >
+        Change your network using MetaMask.
+         You're currently on unknown network of id 7.
+      </WithStyles(ForwardRef(Typography))>
+    </div>
+  </WithStyles(ForwardRef(Grid))>
+</Styled(MuiBox)>
+`;

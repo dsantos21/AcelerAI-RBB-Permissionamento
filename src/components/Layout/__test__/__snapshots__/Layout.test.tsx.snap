@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<Layout /> matches snapshot 1`] = `
+<WithStyles(ForwardRef(Grid))
+  container={true}
+  direction="column"
+>
+  <AppBar />
+  <Styled(MuiBox)
+    mb={3}
+    mt={5}
+    width={0.8}
+  >
+    <div
+      className="test"
+    />
+  </Styled(MuiBox)>
+  <Footer />
+</WithStyles(ForwardRef(Grid))>
+`;

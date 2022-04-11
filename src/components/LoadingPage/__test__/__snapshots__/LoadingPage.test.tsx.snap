@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<LoadingPage /> matches snapshot 1`] = `
+<WithStyles(ForwardRef(Grid))
+  alignItems="center"
+  container={true}
+  justifyContent="center"
+>
+  <WithStyles(ForwardRef(Chip))
+    color="primary"
+    label="Loading"
+  />
+</WithStyles(ForwardRef(Grid))>
+`;

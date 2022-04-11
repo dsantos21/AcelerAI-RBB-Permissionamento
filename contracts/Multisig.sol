@@ -14,34 +14,26 @@
  */
 pragma solidity >=0.6.0 <0.9.0;
 
-import "./AdminProxy.sol";
-import "./AdminList.sol";
-import "./NodeIngress.sol";
-import "./AccountIngress.sol";
+import "./Admin.sol";
+
+contract Multisig {
 
 
-contract Admin is AdminProxy, AdminList {
-
-    NodeIngress private nodeIngressContract;
-    AccountIngress private accountIngressContract;
-
-    // TODO: adicionar depois os métodos dos nodes
-    string private constant ADD_ADMIN = "ADD_ADMIN";
-    string private constant REMOVE_ADMIN = "REMOVE_ADMIN";
+    string private constant ADD_ADMINS = "ADD_ADMINS"; // TODO: é o caso?
 
     string private constant CHANGE_REQUIREMENT = "CHANGE_REQUIREMENT";
-    string private constant VOTE_FOR_STRUCTURAL_CHANGES = "VOTE_FOR_STRUCTURAL_CHANGES";
-    //TODO: list of address that voted addressesThatVotedIn
-    mapping (bytes32 => address[]) private addressList; // alterar o hasVoted para indexOfaddressList
+
+    string private constant ADD_ENODE = "ADD_ENODE";
+    string private constant REMOVE_ENODE = "REMOVE_ENODE"; // TODO: só esses?
+
+    mapping (bytes32 => address[]) private addressList;
     mapping (bytes32 => mapping (address => uint)) private hasVoted; // 1-based indexing. 0 means non-existent
 
     bytes32[] private hashesList;
     mapping (bytes32 => uint) private indexOfHashesList;
 
-    address private votedForStructuralChanges;
-
     bool private qualifiedMajority; // true: qualified majority, greater than 2/3; false: simple majority, greater than 50%;
-
+    
     event Voted(
         bytes32 hash,
         bool voted
@@ -51,97 +43,19 @@ contract Admin is AdminProxy, AdminList {
         bytes32 hash,
         bool voteCanceled
     );
-    
-    event Executed(
-        string opName,
-        address payload,
-        address lastSender,
-        bytes32 hash
-    );
 
     modifier multisigTx(string memory opName, address payload) {
-        // TODO: gethash aqui
         if(voteAndVerify(opName, payload, msg.sender)){
             _;
             finish(opName, payload, msg.sender);
         }
     }
 
-    modifier onlyAdmin() {
-        require(isAuthorized(msg.sender), "Sender not authorized");
-        _;
-    }
-
-    modifier atLeastOneAdmin() {
-        require(size() > 1, "There must be at least 1 administrator");
-        _;
-    }
-
-    modifier isAdmin (address _address) {
-        require(isAuthorized(_address), "The address given is not an admin");
-        _;
-    }
-
     constructor () {
-        add(msg.sender);
         qualifiedMajority = true;
-        votedForStructuralChanges = msg.sender;
-    }
-    // TODO: colocar o node ingress e account antes do admin no migration
-    function setAccountIngressContract (AccountIngress _accountIngressContract) external {
-        require (isVotedForStructuralChanges(msg.sender), "Not permitted");
-        accountIngressContract = _accountIngressContract;
     }
 
-    function setNodeIngressContract (NodeIngress _nodeIngressContract) external {
-        require (isVotedForStructuralChanges(msg.sender), "Not permitted");
-        nodeIngressContract = _nodeIngressContract;
-    }
-    //fim
-    
-    function revokeAccessToStructuralChanges() public { //TODO: votação para revogar o cara que manda em tudo
-        require(isVotedForStructuralChanges(msg.sender), "Not permitted");
-        votedForStructuralChanges = address(0);
-    }
-
-    function isAuthorized (address _address) public override view returns (bool) {
-        if (msg.sender == address(accountIngressContract) || msg.sender == address(nodeIngressContract)){
-            return isVotedForStructuralChanges(_address);
-        }
-        return exists(_address);
-    }
-    
-    function isVotedForStructuralChanges (address _address) public view returns (bool) { //haverá método com votação para zerar esse endereço?
-        return _address == votedForStructuralChanges;
-    }
-
-    function voteForStructuralChanges (address _address) external onlyAdmin isAdmin(_address) multisigTx(VOTE_FOR_STRUCTURAL_CHANGES, _address) {
-        votedForStructuralChanges = _address;
-    }
-
-    function addAdmin(address _address) external onlyAdmin multisigTx(ADD_ADMIN, _address) {
-        if (msg.sender == _address) {
-            emit AdminAdded(false, _address, "Adding own account as Admin is not permitted");
-        } else {
-            bool result = add(_address);
-            string memory message = result ? "Admin account added successfully" : "Account is already an Admin";
-            emit AdminAdded(result, _address, message);
-        }
-    }
-
-    function removeAdmin(address _address) external onlyAdmin atLeastOneAdmin multisigTx(REMOVE_ADMIN, _address) {
-        if (isVotedForStructuralChanges(_address)){
-            votedForStructuralChanges = address(0);
-        }
-        bool removed = remove(_address);
-        emit AdminRemoved(removed, _address);
-    }
-
-    function getAdmins() external view returns (address[] memory){
-        return allowlist; // mythx-disable-line SWC-128
-    }
-
-    function getVotedForStructuralChanges() public view returns (address){
+    function getVotedForStructuralChanges() public view returns (address){ // vai ficar aqui?
         return votedForStructuralChanges;
     }
 
@@ -151,10 +65,6 @@ contract Admin is AdminProxy, AdminList {
 
     function getHashesList() public view returns (bytes32[] memory){
         return hashesList;
-    }
-
-    function getHash(string memory opName, address payload) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(opName, payload));
     }
 
     function changeMajorityRequirement() external onlyAdmin multisigTx(CHANGE_REQUIREMENT, address(0)) {
@@ -175,8 +85,7 @@ contract Admin is AdminProxy, AdminList {
     // Every time this method is called there will be a check if the majority has been reached,
     // as the majority can be reached after removing an administrator.
     // desta forma o usuario ao realizar uma chamada extra o usuário executa a ação pendente
-    function voteAndVerify(string memory opName, address payload, address sender) onlyAdmin internal returns (bool) {
-        bytes32 hash = getHash(opName, payload);
+    function voteAndVerify(bytes32 hash) onlyAdmin internal returns (bool) {
         if (hasVoted[hash][sender] == 0) { // 1-based index
             if(getAddressListLength(hash) == 0) {
                 indexOfHashesList[hash] = hashesList.length;
@@ -231,12 +140,6 @@ contract Admin is AdminProxy, AdminList {
         hashesList.pop();
         indexOfHashesList[hash] = 0;
     }
-
-    function finish(string memory opName, address payload, address lastSender) onlyAdmin private {
-        bytes32 hash = getHash(opName, payload);
-        deleteHash(hash);
-        emit Executed(opName, payload, lastSender, hash);
-    }
 }
 
 
@@ -262,10 +165,11 @@ contract Admin is AdminProxy, AdminList {
 // ALTERAR MIGRATION PARA DEFINIR AS CONSTANTES NODE_CONTRACT E ACCOUNT_CONTRACT NO CONSTRUTOR
 
 // Tirar dúvida
-// Hash collision
 // Alterar nomes de métodos e variáveis
-// Adicionar getters
 // Explicar voteAndVerify
 // Unir com o node
 // Testes manuais e ajustes
 // Testes automáticos e ajustes
+
+// ter certeza do contrato que está sendo mexido
+// e se sabe mexer
