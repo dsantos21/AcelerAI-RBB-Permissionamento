@@ -24,6 +24,7 @@ contract("Admin (admin management)", async accounts => {
 
   it("non admin cannot add another admin", async () => {
     try {
+      //vote to admin
       await adminContract.addAdmin(accounts[2], { from: accounts[1] });
       expect.fail(null, null, "Modifier was not enforced")
     } catch(err) {
@@ -37,6 +38,25 @@ contract("Admin (admin management)", async accounts => {
     assert.ok(isAuthorized);
   });
 
+  it("admin cannot add another admin alone if there is more than one admin", async () => {
+    await adminContract.addAdmin(accounts[2], { from: accounts[0] });
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    let isAuthorized = await adminContract.isAuthorized(accounts[1]);
+    assert.notOk(isAuthorized);
+  });
+  it("admin cannot add another admin alone if there is more than one admin", async () => {
+    await adminContract.addAdmin(accounts[2], { from: accounts[0] });
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    let isAuthorized = await adminContract.isAuthorized(accounts[1]);
+    assert.notOk(isAuthorized);
+  });
+
+
   it("non admin cannot remove another admin", async () => {
     try {
       await adminContract.removeAdmin(accounts[2], { from: accounts[1] });
@@ -44,6 +64,18 @@ contract("Admin (admin management)", async accounts => {
     } catch(err) {
       expect(err.reason).to.contain("Sender not authorized");
     }
+  });
+  it("admin can remove himself if he is not the only admin", async () => {
+    await adminContract.addAdmin(accounts[2], { from: accounts[0] });
+    await adminContract.removeAdmin(accounts[2], { from: accounts[2] });
+    let isAuthorized = await adminContract.isAuthorized(accounts[2]);
+    assert.notOk(isAuthorized);
+  });
+
+  it("admin cannot remove himself if he is the only admin", async () => {
+    await adminContract.removeAdmin(accounts[0], { from: accounts[0] });
+    let isAuthorized = await adminContract.isAuthorized(accounts[0]);
+    assert.Ok(isAuthorized);
   });
 
   it("admin can remove another admin MS (with 2 admins in the list)", async () => {
@@ -64,6 +96,13 @@ contract("Admin (admin management)", async accounts => {
     } catch(err) {
       expect(err.reason).to.contain("Cannot invoke method with own account as parameter");
     }
+  });
+  it("wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwhen i  add a admin this admin need to go to allowlist", async () => { // pode se remover desde que haja mais que um administrador na lista de admins
+    
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    let allowlist = await adminContract.getAdmins();
+    assert.Ok(allowlist[0]==accounts[1] || accounts[1] == accounts[1] );
+      
   });
 
   it("get admins list", async () => {
