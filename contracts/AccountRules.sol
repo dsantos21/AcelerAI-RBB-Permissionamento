@@ -12,9 +12,9 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
     // this will be used to protect data when upgrading contracts
     bool private readOnlyMode = false;
     // version of this contract: semver like 1.2.14 represented like 001002014
-    uint private version = 1000000;
+    uint private version = 2000000;
 
-    AccountIngress private ingressContract;
+    AccountIngress private accountIngressContract;
 
     modifier onlyOnEditMode() {
         require(!readOnlyMode, "In read only mode: rules cannot be modified");
@@ -22,35 +22,38 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
     }
 
     modifier onlyAdmin() {
-        address adminContractAddress = ingressContract.getContractAddress(ingressContract.ADMIN_CONTRACT());
-
-        require(adminContractAddress != address(0), "Ingress contract must have Admin contract registered");
-        require(Admin(adminContractAddress).isAuthorized(msg.sender), "Sender not authorized");
+        require(isAuthorizedAdmin(msg.sender), "Sender not authorized");
         _;
     }
 
-    constructor (AccountIngress _ingressContract) public {
-        ingressContract = _ingressContract;
+    modifier onlyVotedForStructuralChanges() {
+        address adminContractAddress = accountIngressContract.getContractAddress(accountIngressContract.ADMIN_CONTRACT());
+        require(Admin(adminContractAddress).isVotedForStructuralChanges(msg.sender), "Not permitted");
+        _;
+    }
+
+    constructor (AccountIngress _accountIngressContract) public {
+        accountIngressContract = _accountIngressContract;
         add(msg.sender);
     }
 
     // VERSION
-    function getContractVersion() public view returns (uint) {
+    function getContractVersion() external view returns (uint) {
         return version;
     }
 
     // READ ONLY MODE
-    function isReadOnly() public view returns (bool) {
+    function isReadOnly() external view returns (bool) {
         return readOnlyMode;
     }
 
-    function enterReadOnly() public onlyAdmin returns (bool) {
+    function enterReadOnly() external onlyVotedForStructuralChanges returns (bool) {
         require(readOnlyMode == false, "Already in read only mode");
         readOnlyMode = true;
         return true;
     }
 
-    function exitReadOnly() public onlyAdmin returns (bool) {
+    function exitReadOnly() external onlyVotedForStructuralChanges returns (bool) {
         require(readOnlyMode == true, "Not in read only mode");
         readOnlyMode = false;
         return true;
@@ -62,15 +65,15 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         uint256, // value
         uint256, // gasPrice
         uint256, // gasLimit
-        bytes memory // payload
-    ) public view returns (bool) {
-        if (
-            accountPermitted (sender)
-        ) {
+        bytes calldata // payload
+    ) external view returns (bool) {
+        if (accountPermitted(sender)) {
             return true;
-        } else {
-            return false;
         }
+        if (isAuthorizedAdmin(sender)) {
+            return true;
+        }
+        return false;
     }
 
     function accountPermitted(
@@ -81,7 +84,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
 
     function addAccount(
         address account
-    ) public onlyAdmin onlyOnEditMode returns (bool) {
+    ) external onlyAdmin onlyOnEditMode returns (bool) {
         bool added = add(account);
         emit AccountAdded(added, account);
         return added;
@@ -89,25 +92,32 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
 
     function removeAccount(
         address account
-    ) public onlyAdmin onlyOnEditMode returns (bool) {
+    ) external onlyAdmin onlyOnEditMode returns (bool) {
         bool removed = remove(account);
         emit AccountRemoved(removed, account);
         return removed;
     }
 
-    function getSize() public view returns (uint) {
+    function getSize() external view returns (uint) {
         return size();
     }
 
-    function getByIndex(uint index) public view returns (address account) {
+    function getByIndex(uint index) external view returns (address account) {
         return allowlist[index];
     }
 
-    function getAccounts() public view returns (address[] memory){
+    function getAccounts() external view returns (address[] memory){
         return allowlist;
     }
 
-    function addAccounts(address[] memory accounts) public onlyAdmin returns (bool) {
+    function addAccounts(address[] calldata accounts) external onlyAdmin returns (bool) {
         return addAll(accounts);
+    }
+
+    function isAuthorizedAdmin(address user) private view returns (bool) {
+        address adminContractAddress = accountIngressContract.getContractAddress(accountIngressContract.ADMIN_CONTRACT());
+
+        require(adminContractAddress != address(0), "Ingress contract must have Admin contract registered");
+        return Admin(adminContractAddress).isAuthorized(user);
     }
 }

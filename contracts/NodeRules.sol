@@ -4,9 +4,10 @@ import "./NodeRulesProxy.sol";
 import "./NodeRulesList.sol";
 import "./NodeIngress.sol";
 import "./Admin.sol";
+import "./Multisig.sol";
 
 
-contract NodeRules is NodeRulesProxy, NodeRulesList {
+contract NodeRules is NodeRulesProxy, NodeRulesList, Multisig {
 
     event NodeAdded(
         bool nodeAdded,
@@ -23,19 +24,34 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bytes16 enodeIp,
         uint16 enodePort
     );
+    
+    event Executed(
+        string opName,
+        bytes32 enodeHigh,
+        bytes32 enodeLow,
+        bytes16 ip,
+        uint16 port,
+        address lastSender,
+        bytes32 pollId
+    );
+
+    struct Node {
+        bytes32 enodeHigh;
+        bytes32 enodeLow;
+        bytes16 ip;
+        uint16 port;
+    }
 
     // in read-only mode rules can't be added/removed
     // this will be used to protect data when upgrading contracts
     bool readOnlyMode = false;
     // version of this contract: semver like 1.2.14 represented like 001002014
-    uint version = 1000000;
+    uint version = 2000000;
 
     NodeIngress private nodeIngressContract;
-
-    modifier onlyOnEditMode() {
-        require(!readOnlyMode, "In read only mode: rules cannot be modified");
-        _;
-    }
+    
+    string private constant ADD_ENODE = "ADD_ENODE";
+    string private constant REMOVE_ENODE = "REMOVE_ENODE";
 
     modifier onlyAdmin() {
         address adminContractAddress = nodeIngressContract.getContractAddress(nodeIngressContract.ADMIN_CONTRACT());
@@ -45,27 +61,33 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         _;
     }
 
-    constructor (NodeIngress _nodeIngressAddress) public {
+    modifier onlyVotedForStructuralChanges() {
+        address adminContractAddress = nodeIngressContract.getContractAddress(nodeIngressContract.ADMIN_CONTRACT());
+        require(Admin(adminContractAddress).isVotedForStructuralChanges(msg.sender), "Not permitted");
+        _;
+    }
+
+    constructor(address _adminContractAddress, NodeIngress _nodeIngressAddress) Multisig(_adminContractAddress) public {
         nodeIngressContract = _nodeIngressAddress;
     }
 
     // VERSION
-    function getContractVersion() public view returns (uint) {
+    function getContractVersion() external view returns (uint) {
         return version;
     }
 
     // READ ONLY MODE
-    function isReadOnly() public view returns (bool) {
+    function isReadOnly() external view returns (bool) {
         return readOnlyMode;
     }
 
-    function enterReadOnly() public onlyAdmin returns (bool) {
+    function enterReadOnly() external onlyVotedForStructuralChanges returns (bool) {
         require(readOnlyMode == false, "Already in read only mode");
         readOnlyMode = true;
         return true;
     }
 
-    function exitReadOnly() public onlyAdmin returns (bool) {
+    function exitReadOnly() external onlyVotedForStructuralChanges returns (bool) {
         require(readOnlyMode == true, "Not in read only mode");
         readOnlyMode = false;
         return true;
@@ -80,7 +102,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bytes32 destinationEnodeLow,
         bytes16 destinationEnodeIp,
         uint16 destinationEnodePort
-    ) public view returns (bytes32) {
+    ) external view returns (bytes32) {
         if (
             enodePermitted (
                 sourceEnodeHigh,
@@ -116,23 +138,27 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         uint16 port,
         NodeType nodeType,
         bytes6 geoHash,
-        string memory name,
-        string memory organization
-    ) public onlyAdmin onlyOnEditMode returns (bool) {
-        bool added = add(enodeHigh, enodeLow, ip, port, nodeType, geoHash, name, organization );
+        string calldata name,
+        string calldata organization
+    ) external onlyAdmin {
+        bytes32 pollId = getPollId(ADD_ENODE, enodeHigh, enodeLow, ip, port);
+        if (voteAndVerify(pollId)){
+            bool added = add(enodeHigh, enodeLow, ip, port, nodeType, geoHash, name, organization);
+            
+            if (added) {
+                triggerRulesChangeEvent(false);
+            }
 
-        if (added) {
-            triggerRulesChangeEvent(false);
+            emit NodeAdded(
+                added,
+                enodeHigh,
+                enodeLow,
+                ip,
+                port
+            );
+
+            finish(ADD_ENODE, enodeHigh, enodeLow, ip, port, msg.sender, pollId);
         }
-        emit NodeAdded(
-            added,
-            enodeHigh,
-            enodeLow,
-            ip,
-            port
-        );
-
-        return added;
     }
 
     function removeEnode(
@@ -140,24 +166,32 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bytes32 enodeLow,
         bytes16 ip,
         uint16 port
-    ) public onlyAdmin onlyOnEditMode returns (bool) {
-        bool removed = remove(enodeHigh, enodeLow, ip, port);
+    ) external onlyAdmin {
+        bytes32 pollId = getPollId(REMOVE_ENODE, enodeHigh, enodeLow, ip, port);
+        if (voteAndVerify(pollId)){
+            bool removed = remove(enodeHigh, enodeLow, ip, port);
 
-        if (removed) {
-            triggerRulesChangeEvent(true);
+            if (removed) {
+                triggerRulesChangeEvent(true);
+            }
+
+            emit NodeRemoved(
+                removed,
+                enodeHigh,
+                enodeLow,
+                ip,
+                port
+            );
+
+            finish(REMOVE_ENODE, enodeHigh, enodeLow, ip, port, msg.sender, pollId);
         }
-        emit NodeRemoved(
-            removed,
-            enodeHigh,
-            enodeLow,
-            ip,
-            port
-        );
-
-        return removed;
     }
 
-    function getSize() public view returns (uint) {
+    function getPollId(string memory opName, bytes32 enodeHigh, bytes32 enodeLow, bytes16 ip, uint16 port) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(opName, enodeHigh, enodeLow, ip, port));
+    }
+
+    function getSize() external view returns (uint) {
         return size();
     }
 
@@ -170,5 +204,10 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
 
     function triggerRulesChangeEvent(bool addsRestrictions) public {
         nodeIngressContract.emitRulesChangeEvent(addsRestrictions);
+    }
+
+    function finish(string memory opName, bytes32 enodeHigh, bytes32 enodeLow, bytes16 ip, uint16 port, address lastSender, bytes32 pollId) private {
+        deletePollId(pollId);
+        emit Executed(opName, enodeHigh, enodeLow, ip, port, lastSender, pollId);
     }
 }
