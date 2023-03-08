@@ -67,6 +67,9 @@ module.exports = async(deployer, network) => {
         // TODO check that this contract is a storage contract eg call a method
     }
 
+    await storageInstance.setValidateEnodeIdOnly(true);
+    console.log("   > Set onlyUseEnodeId to True ");
+
     // rules -> storage
     await deployer.deploy(Rules, nodeIngress, nodeStorage);
     console.log("   > Rules deployed with NodeIngress.address = " + nodeIngress + "\n   > and storageAddress = " + nodeStorage);
