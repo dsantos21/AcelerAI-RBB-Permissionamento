@@ -95,7 +95,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         address account
     ) external onlyAdmin onlyOnEditMode returns (bool) {
         bool added = add(account);
-        emit AccountAdded(added, account);
+        emit AccountAdded(added, account, msg.sender, block.timestamp);
         return added;
     }
 
@@ -103,7 +103,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         address account
     ) external onlyAdmin onlyOnEditMode returns (bool) {
         bool removed = remove(account);
-        emit AccountRemoved(removed, account);
+        emit AccountRemoved(removed, account, msg.sender, block.timestamp);
         return removed;
     }
 
@@ -112,7 +112,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
     }
 
     function addAccounts(address[] calldata accounts) external onlyAdmin returns (bool) {
-        return addAll(accounts);
+        return addAll(accounts, msg.sender);
     }
 
     function isAuthorizedAdmin(address user) private view returns (bool) {
