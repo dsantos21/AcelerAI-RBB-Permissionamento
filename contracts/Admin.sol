@@ -29,7 +29,7 @@ contract Admin is AdminProxy, AdminList {
         _;
     }
 
-    constructor() public {
+    constructor() {
         add(msg.sender);
     }
 

@@ -41,7 +41,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         _;
     }
 
-    constructor (AccountIngress _ingressContract, AccountStorage _storage) public {
+    constructor (AccountIngress _ingressContract, AccountStorage _storage) {
         setStorage(_storage);
         ingressContract = _ingressContract;
     }

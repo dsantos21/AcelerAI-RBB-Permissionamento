@@ -43,7 +43,7 @@ contract NodeStorage {
 
     bool private onlyUseEnodeId;
 
-    constructor (NodeIngress _ingressContract) public {
+    constructor (NodeIngress _ingressContract) {
         ingressContract = _ingressContract;
         onlyUseEnodeId = false;
     }
