@@ -1,0 +1,34 @@
+{
+  "name": "permissioningdeploy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dotenv": "^7.0.0",
+    "truffle-hdwallet-provider": "^1.0.17",
+    "web3-utils": "^1.5.3"
+    
+  },
+  "devDependencies": {
+    "truffle": "5.0.17"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RBBNet/Permissionamento.git"
+  },
+  "keywords": [
+    "permissioning"
+  ],
+  "author": "RBB",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RBBNet/Permissionamento/issues"
+  },
+  "homepage": "https://github.com/RBBNet/Permissionamento#readme"
+}
