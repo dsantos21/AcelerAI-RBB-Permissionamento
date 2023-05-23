@@ -23,6 +23,6 @@ contract ExposedAdminList is AdminList {
     }
 
     function _addBatch(address[] memory _addresses) public returns (bool) {
-        return addAll(_addresses);
+        return addAll(_addresses, msg.sender);
     }
 }

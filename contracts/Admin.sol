@@ -25,19 +25,19 @@ contract Admin is AdminProxy, AdminList {
 
     function addAdmin(address _address) public onlyAdmin returns (bool) {
         if (msg.sender == _address) {
-            emit AdminAdded(false, _address, "Adding own account as Admin is not permitted");
+            emit AdminAdded(false, _address, msg.sender, block.timestamp, "Adding own account as Admin is not permitted");
             return false;
         } else {
             bool result = add(_address);
             string memory message = result ? "Admin account added successfully" : "Account is already an Admin";
-            emit AdminAdded(result, _address, message);
+            emit AdminAdded(result, _address, msg.sender, block.timestamp, message);
             return result;
         }
     }
 
     function removeAdmin(address _address) public onlyAdmin notSelf(_address) returns (bool) {
         bool removed = remove(_address);
-        emit AdminRemoved(removed, _address);
+        emit AdminRemoved(removed, _address, msg.sender, block.timestamp);
         return removed;
     }
 
@@ -46,6 +46,6 @@ contract Admin is AdminProxy, AdminList {
     }
 
     function addAdmins(address[] memory accounts) public onlyAdmin returns (bool) {
-        return addAll(accounts);
+        return addAll(accounts, msg.sender);
     }
 }
