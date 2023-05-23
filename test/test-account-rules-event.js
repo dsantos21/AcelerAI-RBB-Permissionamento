@@ -43,36 +43,50 @@ contract("Account Rules (Events & Management)", (accounts) => {
     it("Should emit an event when an account is added", async () => {   
         // Add an account
         await rulesContract.addAccount(address1);
+        let block0 = await web3.eth.getBlock("latest");
+        let blockTimestamp0 = block0['timestamp'];
 
         // Attempt to add a duplicate entry
         await rulesContract.addAccount(address1);
+        let block1 = await web3.eth.getBlock("latest");
+        let blockTimestamp1 = block1['timestamp'];
 
         // Get the events
         let result = await rulesContract.getPastEvents("AccountAdded", {fromBlock: 0, toBlock: "latest" });
 
         // Verify the successful AccountAdded event is 'true'
         assert.equal(result[0].returnValues.accountAdded, true, "accountAdded SHOULD be true");
-        assert.equal(result[0].returnValues.accountAddress.toLowerCase(), address1, "account address SHOULD be " + address1);
+        assert.equal(result[0].returnValues.accountGrantee.toLowerCase(), address1, "account grantee address SHOULD be " + address1);
+        assert.equal(result[0].returnValues.accountGrantor.toLowerCase(), accounts[0].toLowerCase(), "account grantor SHOULD be " + accounts[0].toLowerCase());
+        assert.equal(result[0].returnValues.blockTimestamp, blockTimestamp0, "block timestamp SHOULD be " + blockTimestamp0);
 
         // Verify the unsuccessful duplicate AccountAdded event is 'false'
         assert.equal(result[1].returnValues.accountAdded, false, "duplicate accountAdded SHOULD be false");
-        assert.equal(result[1].returnValues.accountAddress.toLowerCase(), address1, "duplicate account address SHOULD be " + address1);
+        assert.equal(result[1].returnValues.accountGrantee.toLowerCase(), address1, "duplicate account grantee address SHOULD be " + address1);
+        assert.equal(result[1].returnValues.accountGrantor.toLowerCase(), accounts[0].toLowerCase(), "duplicate account grantor SHOULD be " + accounts[0].toLowerCase());
+        assert.equal(result[1].returnValues.blockTimestamp, blockTimestamp1, "duplicate block timestamp SHOULD be " + blockTimestamp1);
     });
 
     it("Should emit events when multiple accounts are added", async () => {
         // Add an account (and duplicate of it)
         await rulesContract.addAccounts([address1,address1]);
+        let block = await web3.eth.getBlock("latest");
+        let blockTimestamp = block['timestamp'];
 
         // Get the events
         let result = await rulesContract.getPastEvents("AccountAdded", {fromBlock: 0, toBlock: "latest" });
 
         // Verify the successful AccountAdded event is 'true'
         assert.equal(result[0].returnValues.accountAdded, true, "accountAdded SHOULD be true");
-        assert.equal(result[0].returnValues.accountAddress.toLowerCase(), address1, "account address SHOULD be " + address1);
+        assert.equal(result[0].returnValues.accountGrantee.toLowerCase(), address1, "account grantee address SHOULD be " + address1);
+        assert.equal(result[0].returnValues.accountGrantor.toLowerCase(), accounts[0].toLowerCase(), "account grantor SHOULD be " + accounts[0].toLowerCase());
+        assert.equal(result[0].returnValues.blockTimestamp, blockTimestamp, "block timestamp SHOULD be " + blockTimestamp);
 
         // Verify the unsuccessful duplicate AccountAdded event is 'false'
         assert.equal(result[1].returnValues.accountAdded, false, "duplicate accountAdded SHOULD be false");
-        assert.equal(result[1].returnValues.accountAddress.toLowerCase(), address1, "duplicate account address SHOULD be " + address1);
+        assert.equal(result[1].returnValues.accountGrantee.toLowerCase(), address1, "duplicate account grantee address SHOULD be " + address1);
+        assert.equal(result[1].returnValues.accountGrantor.toLowerCase(), accounts[0].toLowerCase(), "duplicate account grantor SHOULD be " + accounts[0].toLowerCase());
+        assert.equal(result[1].returnValues.blockTimestamp, blockTimestamp, "duplicate block timestamp SHOULD be " + blockTimestamp);
     });
 
     it("Should emit an event when an account is removed", async () => {
@@ -80,17 +94,26 @@ contract("Account Rules (Events & Management)", (accounts) => {
         await rulesContract.addAccount(address1);
 
         await rulesContract.removeAccount(address1);
+        let block1 = await web3.eth.getBlock("latest");
+        let blockTimestamp1 = block1['timestamp'];
+
         await rulesContract.removeAccount(address1);
+        let block2 = await web3.eth.getBlock("latest");
+        let blockTimestamp2 = block2['timestamp'];
 
         // Get the events
         let result = await rulesContract.getPastEvents("AccountRemoved", {fromBlock: 0, toBlock: "latest" });
 
         // Verify the successful AccountRemoved event is 'true'
         assert.equal(result[1].returnValues.accountRemoved, true, "accountRemoved SHOULD be true");
-        assert.equal(result[1].returnValues.accountAddress.toLowerCase(), address1, "account address SHOULD be " + address1);
+        assert.equal(result[1].returnValues.accountGrantee.toLowerCase(), address1, "account grantee address SHOULD be " + address1);
+        assert.equal(result[1].returnValues.accountGrantor.toLowerCase(), accounts[0].toLowerCase(), "account grantor SHOULD be " + accounts[0].toLowerCase());
+        assert.equal(result[1].returnValues.blockTimestamp, blockTimestamp1, "block timestamp SHOULD be " + blockTimestamp1);
 
         // Verify the unsuccessful duplicate AccountRemoved event is 'false'
         assert.equal(result[2].returnValues.accountRemoved, false, "duplicate accountRemoved SHOULD be false");
-        assert.equal(result[2].returnValues.accountAddress.toLowerCase(), address1, "duplicate account address SHOULD be " + address1);
+        assert.equal(result[2].returnValues.accountGrantee.toLowerCase(), address1, "duplicate account grantee address SHOULD be " + address1);
+        assert.equal(result[2].returnValues.accountGrantor.toLowerCase(), accounts[0].toLowerCase(), "duplicate account grantor SHOULD be " + accounts[0].toLowerCase());
+        assert.equal(result[2].returnValues.blockTimestamp, blockTimestamp2, "duplicate block timestamp SHOULD be " + blockTimestamp2);
     });
 });

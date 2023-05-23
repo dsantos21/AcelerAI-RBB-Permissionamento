@@ -5,15 +5,19 @@ const AdminContract = artifacts.require("Admin.sol");
 const RULES="0x72756c6573000000000000000000000000000000000000000000000000000000";
 const ADMIN="0x61646d696e697374726174696f6e000000000000000000000000000000000000";
 
-var nodeHigh = "0x9bd359fdc3a2ed5df436c3d8914b1532740128929892092b7fcb320c1b62f375";
-var nodeLow = "0x892092b7fcb320c1b62f3759bd359fdc3a2ed5df436c3d8914b1532740128929";
-var nodeHost = "0x0000000000000000000011119bd359fd";
-var nodePort = 30303;
+const node1High = "0x9bd359fdc3a2ed5df436c3d8914b1532740128929892092b7fcb320c1b62f375";
+const node1Low = "0x892092b7fcb320c1b62f3759bd359fdc3a2ed5df436c3d8914b1532740128929";
+const node1Host = "0x0000000000000000000011119bd359fd";
+const node1Port = 30303;
+const node1Type = 0; // 0: Boot, 1: Validator, 2: Writer, 3: WriterPartner, 4: ObserverBoot, 5: Other
+const node1GeoHash = "0x000000000000";
+const node1Name = "node1";
+const node1Organization = "organization1";
 
-var node2High = "0x892092b7fcb320c1b62f3759bd359fdc3a2ed5df436c3d8914b1532740128929";
-var node2Low = "0xcb320c1b62f37892092b7f59bd359fdc3a2ed5df436c3d8914b1532740128929";
-var node2Host = "0x0000000000000000000011119bd359fd";
-var node2Port = 30304;
+const node2High = "0x892092b7fcb320c1b62f3759bd359fdc3a2ed5df436c3d8914b1532740128929";
+const node2Low = "0xcb320c1b62f37892092b7f59bd359fdc3a2ed5df436c3d8914b1532740128929";
+const node2Host = "0x0000000000000000000011119bd359fd";
+const node2Port = 30304;
 
 const address2 = "0x345ca3e014aaf5dca488057592ee47305d9b3e10".toLowerCase();
 
@@ -28,12 +32,12 @@ contract ("Node Ingress (no contracts registered)", (accounts) => {
         nodeRulesContract = await NodeRulesContract.new(nodeIngressContract.address);
     })
 
-    it("should forbid any connection if rules contract has not been registered", async () => {
+    it("should allow any connection if rules contract has not been registered", async () => {
         result = await nodeIngressContract.getContractAddress(RULES);
         assert.equal(result, "0x0000000000000000000000000000000000000000", "NodeRules contract should NOT be registered");
 
-        let permitted = await nodeIngressContract.connectionAllowed(nodeHigh, nodeLow, nodeHost, nodePort, node2High, node2Low, node2Host, node2Port);
-        assert.equal(permitted, "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "expected connectionAllowed to return false");
+        let permitted = await nodeIngressContract.connectionAllowed(node1High, node1Low, node1Host, node1Port, node2High, node2Low, node2Host, node2Port);
+        assert.equal(permitted, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "expected connectionAllowed to return true");
     });
 
     it("Should return empty value if NodeRules contract has not been registered", async () => {
@@ -246,7 +250,7 @@ contract("Ingress contract", (accounts) => {
 
     it("Should emit an event when the NodeRules are updated", async () => {
         //Add a more restrictive rule
-        await nodeRulesContract.addEnode(nodeHigh, nodeLow, nodeHost, nodePort, { from: accounts[0] });
+        await nodeRulesContract.addEnode(node1High, node1Low, node1Type, node1GeoHash, node1Name, node1Organization, { from: accounts[0] });
 
         // Get the events
         let result = await nodeIngressContract.getPastEvents("NodePermissionsUpdated", {fromBlock: 0, toBlock: "latest" });
@@ -255,7 +259,7 @@ contract("Ingress contract", (accounts) => {
         assert.equal(result[0].returnValues.addsRestrictions, false, "addsRestrictions SHOULD be false");
 
         // Add a less restrictive rule
-        result = await nodeRulesContract.removeEnode(nodeHigh, nodeLow, nodeHost, nodePort);
+        result = await nodeRulesContract.removeEnode(node1High, node1Low);
 
         // Get the events
         result = await nodeIngressContract.getPastEvents("NodePermissionsUpdated", {fromBlock: 0, toBlock: "latest" });
