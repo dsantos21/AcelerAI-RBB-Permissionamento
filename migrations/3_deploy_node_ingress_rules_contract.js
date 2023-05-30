@@ -37,8 +37,6 @@ module.exports = async(deployer, network) => {
     console.log("   > NodeRules deployed with NodeIngress.address = " + nodeIngress);
     let nodeRulesContract = await NodeRules.deployed();
 
-    
-
     await nodeIngressInstance.setContractAddress(rulesContractName, NodeRules.address);
     console.log("   > Updated NodeIngress contract with NodeRules address = " + NodeRules.address);
 
@@ -49,11 +47,13 @@ module.exports = async(deployer, network) => {
             let enode = allowlistedNodes[i];
             const { enodeHigh, enodeLow, ip, port } = AllowlistUtils.enodeToParams(enode);
             
-            let result = await nodeRulesContract.addEnode(
-                Web3Utils.hexToBytes(enodeHigh),
-                Web3Utils.hexToBytes(enodeLow),
-                Web3Utils.hexToBytes(ip),    
-                Web3Utils.toBN(port)
+            await nodeRulesContract.addEnode(
+                enodeHigh,
+                enodeLow,
+                nodeType,
+                geoHash,
+                name,
+                organization
             );
             console.log("     > eNode added: " + enode );
         }
