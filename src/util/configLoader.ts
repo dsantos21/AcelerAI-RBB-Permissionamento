@@ -37,7 +37,7 @@ const loadConfig = async (): Promise<Config> => {
       }
 
       if (!networkId) {
-        throw new Error('Network Id environment variable is missing');
+        throw new Error('Chain Id environment variable is missing');
       }
 
       return { accountIngressAddress, nodeIngressAddress, networkId };
@@ -59,11 +59,16 @@ const loadConfig = async (): Promise<Config> => {
     nodeIngressAddress = (nodeIngressNetworks[0] as { address: string }).address;
 
     // if we haven't errored by this point then we're being driven by env and until we do it better we should accept any network
-    const nodeIngressNetworkId = Object.keys(NodeIngress.networks)[0]
-      ? (Object.keys(NodeIngress.networks)[0] as string)
-      : 'any';
+    //const nodeIngressNetworkId = Object.keys(NodeIngress.networks)[0]
+    //  ? (Object.keys(NodeIngress.networks)[0] as string)
+    //  : 'any';
 
-    return { accountIngressAddress, nodeIngressAddress, networkId: nodeIngressNetworkId };
+    if (!networkId) {
+      throw new Error('Chain Id environment variable is missing');
+    }
+
+    console.log('chain id: ' + networkId);
+    return { accountIngressAddress, nodeIngressAddress, networkId };
   }
 };
 

@@ -74,7 +74,7 @@ const AccountTabContainer: React.FC<AccountTabContainerProps> = ({ isOpen }) => 
 
     const handleRemove = async (value: string) => {
       try {
-        const est = await accountRulesContract!.estimate.removeAccount(value);
+        const est = await accountRulesContract!.estimateGas.removeAccount(value);
         const tx = await accountRulesContract!.functions.removeAccount(value, { gasLimit: est.toNumber() * 2 });
         toggleModal('remove')(false);
         addTransaction(value, PENDING_REMOVAL);

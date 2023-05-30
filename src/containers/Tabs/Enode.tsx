@@ -55,8 +55,8 @@ const EnodeTabContainer: React.FC<EnodeTabContainerProps> = ({ isOpen }) => {
       const identifier = paramsToIdentifier({
         enodeHigh,
         enodeLow,
-        ip,
-        port,
+        //ip,
+        //port,
         nodeType: type,
         geoHash,
         name,
@@ -66,8 +66,8 @@ const EnodeTabContainer: React.FC<EnodeTabContainerProps> = ({ isOpen }) => {
         const tx = await nodeRulesContract!.functions.addEnode(
           utils.hexlify(enodeHigh),
           utils.hexlify(enodeLow),
-          utils.hexlify(ip),
-          utils.bigNumberify(port),
+          //utils.hexlify(ip),
+          //utils.bigNumberify(port),
           // @ts-ignore
           utils.hexlify(types[type]),
           geoHash,
@@ -107,23 +107,12 @@ const EnodeTabContainer: React.FC<EnodeTabContainerProps> = ({ isOpen }) => {
     };
 
     const handleRemove = async (value: string) => {
-      const { enodeHigh, enodeLow, ip, port } = identifierToParams(value);
+      const { enodeHigh, enodeLow } = identifierToParams(value);
       try {
-        const est = await nodeRulesContract!.estimate.removeEnode(
-          utils.hexlify(enodeHigh),
-          utils.hexlify(enodeLow),
-          utils.hexlify(ip),
-          utils.bigNumberify(port)
-        );
-        const tx = await nodeRulesContract!.functions.removeEnode(
-          utils.hexlify(enodeHigh),
-          utils.hexlify(enodeLow),
-          utils.hexlify(ip),
-          utils.bigNumberify(port),
-          {
-            gasLimit: est.toNumber() * 2
-          }
-        );
+        const est = await nodeRulesContract!.estimateGas.removeEnode(utils.hexlify(enodeHigh), utils.hexlify(enodeLow));
+        const tx = await nodeRulesContract!.functions.removeEnode(utils.hexlify(enodeHigh), utils.hexlify(enodeLow), {
+          gasLimit: est.toNumber() * 2
+        });
         toggleModal('remove')(false);
         addTransaction(value, PENDING_REMOVAL);
         await tx.wait(1); // wait on receipt confirmations

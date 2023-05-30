@@ -7,8 +7,8 @@ import ngeohash from 'ngeohash';
 export type Enode = {
   enodeHigh: string;
   enodeLow: string;
-  ip: string;
-  port: string;
+  //ip: string;
+  //port: string;
   nodeType: number;
   geoHash: string;
   organization: string;
@@ -95,8 +95,6 @@ export const getGeohash = (ip: string) =>
 export const paramsToIdentifier = ({
   enodeHigh,
   enodeLow,
-  ip,
-  port,
   nodeType,
   geoHash,
   name,
@@ -104,14 +102,12 @@ export const paramsToIdentifier = ({
 }: {
   enodeHigh: string;
   enodeLow: string;
-  ip: string;
-  port: string;
   nodeType: number;
   geoHash: string;
   name: string;
   organization: string;
 }) => {
-  return `${enodeHigh}_${enodeLow}_${ip}_${port}_${nodeType}_${geoHash}_${name}_${organization}`;
+  return `${enodeHigh}_${enodeLow}_${nodeType}_${geoHash}_${name}_${organization}`;
 };
 
 function getHexIpv4(stringIp: string) {
@@ -125,12 +121,10 @@ function toHex(number: string) {
 }
 
 export const identifierToParams = (identifier: string) => {
-  const [enodeHigh, enodeLow, ip, port, nodeType, geoHash, name, organization] = identifier.split('_');
+  const [enodeHigh, enodeLow, nodeType, geoHash, name, organization] = identifier.split('_');
   return {
     enodeHigh,
     enodeLow,
-    ip,
-    port,
     identifier,
     nodeType: parseInt(nodeType),
     geoHash,
@@ -154,8 +148,6 @@ export const isValidEnode = (str: string) => {
 export const isEqual = (node1: Enode, node2: Enode) => {
   return (
     node1.enodeHigh.toLowerCase() === node2.enodeHigh.toLowerCase() &&
-    node1.enodeLow.toLowerCase() === node2.enodeLow.toLowerCase() &&
-    node1.ip === node2.ip &&
-    node1.port === node2.port
+    node1.enodeLow.toLowerCase() === node2.enodeLow.toLowerCase()
   );
 };

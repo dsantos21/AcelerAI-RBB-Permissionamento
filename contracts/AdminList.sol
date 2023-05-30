@@ -1,17 +1,20 @@
 pragma solidity 0.5.9;
 
 
-
 contract AdminList {
     event AdminAdded(
         bool adminAdded,
-        address account,
+        address accountGrantee,
+        address accountGrantor,
+        uint blockTimestamp,
         string message
     );
 
     event AdminRemoved(
         bool adminRemoved,
-        address account
+        address accountGrantee,
+        address accountGrantor,
+        uint blockTimestamp
     );
 
     address[] public allowlist;
@@ -33,19 +36,19 @@ contract AdminList {
         return false;
     }
 
-    function addAll(address[] memory accounts) internal returns (bool) {
+    function addAll(address[] memory accounts, address _grantor) internal returns (bool) {
         bool allAdded = true;
         for (uint i = 0; i<accounts.length; i++) {
             if (msg.sender == accounts[i]) {
-                emit AdminAdded(false, accounts[i], "Adding own account as Admin is not permitted");
+                emit AdminAdded(false, accounts[i], _grantor, block.timestamp, "Adding own account as Admin is not permitted");
                 allAdded = allAdded && false;
             } else if (exists(accounts[i])) {
-                emit AdminAdded(false, accounts[i], "Account is already an Admin");
+                emit AdminAdded(false, accounts[i], _grantor, block.timestamp, "Account is already an Admin");
                 allAdded = allAdded && false;
             }  else {
                 bool result = add(accounts[i]);
                 string memory message = result ? "Admin account added successfully" : "Account is already an Admin";
-                emit AdminAdded(result, accounts[i], message);
+                emit AdminAdded(result, accounts[i], _grantor, block.timestamp, message);
                 allAdded = allAdded && result;
             }
         }

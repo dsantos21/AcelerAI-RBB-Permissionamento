@@ -32,8 +32,8 @@ contract NodeIngress is Ingress {
         uint16 destinationEnodePort
     ) public view returns (bytes32) {
         if(getContractAddress(RULES_CONTRACT) == address(0)) {
-            //reject connection
-            return 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+            //accept connection
+            return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
         }
 
         return NodeRulesProxy(registry[RULES_CONTRACT]).connectionAllowed(

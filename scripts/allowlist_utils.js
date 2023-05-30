@@ -1,30 +1,30 @@
 const Web3Utils = require("web3-utils");
 
 const enodeToParams = enodeURL => {
+    let enodeId = "";
     let enodeHigh = "";
     let enodeLow = "";
-    let ip = "";
-    let port = "";
+    let nodeType = "";
+    let geoHash = "";
+    let name = "";
+    let organization = "";
 
     const splitURL = enodeURL.split("//")[1];
     if (splitURL) {
-        const [enodeId, rawIpAndPort] = splitURL.split("@");
+        [enodeId, nodeType, geoHash, name, organization] = splitURL.split("|");
         if (enodeId && enodeId.length === 128) {
             enodeHigh = "0x" + enodeId.slice(0, 64);
             enodeLow = "0x" + enodeId.slice(64);
         }
-        if (rawIpAndPort) {
-            const [ipAndPort] = rawIpAndPort.split("?");
-            if (ipAndPort) {
-                [ip, port] = ipAndPort.split(":");
-            }
-        }
     }
+    
     return {
         enodeHigh,
         enodeLow,
-        ip: ip ? getHexIpv4(ip) : "",
-        port
+        nodeType,
+        geoHash,
+        name,
+        organization
     };
 };
 
@@ -133,19 +133,6 @@ function getAccounts(accounts) {
     }
     
     return [];
-}
-
-
-function getHexIpv4(stringIp) {
-    const splitIp = stringIp.split(".");
-    return `0x00000000000000000000ffff${toHex(splitIp[0])}${toHex(
-        splitIp[1]
-    )}${toHex(splitIp[2])}${toHex(splitIp[3])}`;
-}
-
-function toHex(number) {
-    const num = Number(number).toString(16);
-    return num.length < 2 ? `0${num}` : num;
 }
 
 module.exports = {

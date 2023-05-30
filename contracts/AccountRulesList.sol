@@ -4,12 +4,16 @@ pragma solidity 0.5.9;
 contract AccountRulesList {
     event AccountAdded(
         bool accountAdded,
-        address accountAddress
+        address accountGrantee,
+        address accountGrantor,
+        uint blockTimestamp
     );
 
     event AccountRemoved(
         bool accountRemoved,
-        address accountAddress
+        address accountGrantee,
+        address accountGrantor,
+        uint blockTimestamp
     );
 
     address[] public allowlist;
@@ -31,11 +35,11 @@ contract AccountRulesList {
         return false;
     }
 
-    function addAll(address[] memory accounts) internal returns (bool) {
+    function addAll(address[] memory accounts, address _grantor) internal returns (bool) {
         bool allAdded = true;
         for (uint i = 0; i < accounts.length; i++) {
             bool added = add(accounts[i]);
-            emit AccountAdded(added, accounts[i]);
+            emit AccountAdded(added, accounts[i], _grantor, block.timestamp);
             allAdded = allAdded && added;
         }
 

@@ -11,17 +11,13 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
     event NodeAdded(
         bool nodeAdded,
         bytes32 enodeHigh,
-        bytes32 enodeLow,
-        bytes16 enodeIp,
-        uint16 enodePort
+        bytes32 enodeLow
     );
 
     event NodeRemoved(
         bool nodeRemoved,
         bytes32 enodeHigh,
-        bytes32 enodeLow,
-        bytes16 enodeIp,
-        uint16 enodePort
+        bytes32 enodeLow
     );
 
     // in read-only mode rules can't be added/removed
@@ -74,24 +70,20 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
     function connectionAllowed(
         bytes32 sourceEnodeHigh,
         bytes32 sourceEnodeLow,
-        bytes16 sourceEnodeIp,
-        uint16 sourceEnodePort,
+        bytes16,
+        uint16,
         bytes32 destinationEnodeHigh,
         bytes32 destinationEnodeLow,
-        bytes16 destinationEnodeIp,
-        uint16 destinationEnodePort
+        bytes16,
+        uint16
     ) public view returns (bytes32) {
         if (
             enodePermitted (
                 sourceEnodeHigh,
-                sourceEnodeLow,
-                sourceEnodeIp,
-                sourceEnodePort
+                sourceEnodeLow
             ) && enodePermitted(
                 destinationEnodeHigh,
-                destinationEnodeLow,
-                destinationEnodeIp,
-                destinationEnodePort
+                destinationEnodeLow
             )
         ) {
             return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
@@ -102,24 +94,20 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
 
     function enodePermitted(
         bytes32 enodeHigh,
-        bytes32 enodeLow,
-        bytes16 ip,
-        uint16 port
+        bytes32 enodeLow
     ) public view returns (bool) {
-        return exists(enodeHigh, enodeLow, ip, port);
+        return exists(enodeHigh, enodeLow);
     }
 
     function addEnode(
         bytes32 enodeHigh,
         bytes32 enodeLow,
-        bytes16 ip,
-        uint16 port,
         NodeType nodeType,
         bytes6 geoHash,
         string memory name,
         string memory organization
     ) public onlyAdmin onlyOnEditMode returns (bool) {
-        bool added = add(enodeHigh, enodeLow, ip, port, nodeType, geoHash, name, organization );
+        bool added = add(enodeHigh, enodeLow, nodeType, geoHash, name, organization);
 
         if (added) {
             triggerRulesChangeEvent(false);
@@ -127,9 +115,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         emit NodeAdded(
             added,
             enodeHigh,
-            enodeLow,
-            ip,
-            port
+            enodeLow
         );
 
         return added;
@@ -137,11 +123,9 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
 
     function removeEnode(
         bytes32 enodeHigh,
-        bytes32 enodeLow,
-        bytes16 ip,
-        uint16 port
+        bytes32 enodeLow
     ) public onlyAdmin onlyOnEditMode returns (bool) {
-        bool removed = remove(enodeHigh, enodeLow, ip, port);
+        bool removed = remove(enodeHigh, enodeLow);
 
         if (removed) {
             triggerRulesChangeEvent(true);
@@ -149,9 +133,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         emit NodeRemoved(
             removed,
             enodeHigh,
-            enodeLow,
-            ip,
-            port
+            enodeLow
         );
 
         return removed;
@@ -161,10 +143,10 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         return size();
     }
 
-    function getByIndex(uint index) public view returns (bytes32 enodeHigh, bytes32 enodeLow, bytes16 ip, uint16 port, NodeType nodeType, bytes6 geoHash, string memory name, string memory organization) {
+    function getByIndex(uint index) public view returns (bytes32 enodeHigh, bytes32 enodeLow, NodeType nodeType, bytes6 geoHash, string memory name, string memory organization) {
         if (index >= 0 && index < size()) {
             enode memory item = allowlist[index];
-            return (item.enodeHigh, item.enodeLow, item.ip, item.port, item.nodeType, item.geoHash, item.name, item.organization);
+            return (item.enodeHigh, item.enodeLow, item.nodeType, item.geoHash, item.name, item.organization);
         }
     }
 

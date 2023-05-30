@@ -21,7 +21,7 @@ module.exports = {
     development: {
      provider: () => new HDWalletProvider(privateKey, endpoint),
      host: "127.0.0.1",
-     port: 8545,
+     port: 9545,
      network_id: "*",
      from: address
     },

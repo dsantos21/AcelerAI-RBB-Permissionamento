@@ -18,7 +18,7 @@ contract ExposedAccountRulesList is AccountRulesList {
     }
 
     function _addAll(address[] memory accounts) public returns (bool) {
-        return addAll(accounts);
+        return addAll(accounts, msg.sender);
     }
 
     function _remove(address _account) public returns (bool) {

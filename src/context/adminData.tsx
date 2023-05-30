@@ -22,7 +22,7 @@ const loadAdminData = (adminContract: Admin | undefined, setAdmins: (admins: str
   if (adminContract === undefined) {
     setAdmins(undefined);
   } else {
-    adminContract.functions.getAdmins().then(admins => {
+    adminContract.getAdmins().then((admins: string[] | undefined) => {
       setAdmins(admins);
     });
   }
@@ -61,10 +61,10 @@ export const AdminDataProvider: React.FC = (props: React.Props<{}>) => {
         setAdminContract(contract);
         contract.removeAllListeners('AdminAdded');
         contract.removeAllListeners('AdminRemoved');
-        contract.on('AdminAdded', (success, account, message, event) => {
+        contract.on('AdminAdded', (success: boolean, account: any, message: any, event: any) => {
           if (success) loadAdminData(contract, setAdmins);
         });
-        contract.on('AdminRemoved', (success, account, event) => {
+        contract.on('AdminRemoved', (success: boolean, account: any, event: any) => {
           if (success) loadAdminData(contract, setAdmins);
         });
       });

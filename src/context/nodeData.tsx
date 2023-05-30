@@ -31,15 +31,16 @@ const loadNodeData = (
     setNodeList([]);
     setNodeReadOnly(undefined);
   } else {
-    nodeRulesContract.functions.isReadOnly().then(isReadOnly => setNodeReadOnly(isReadOnly));
-    nodeRulesContract.functions.getSize().then(listSize => {
+    nodeRulesContract.isReadOnly().then((isReadOnly: boolean | undefined) => setNodeReadOnly(isReadOnly));
+    nodeRulesContract.getSize().then((listSize: { gt: (arg0: number) => any }) => {
       const listElementPromises = [];
       for (let i = 0; listSize.gt(i); i++) {
-        listElementPromises.push(nodeRulesContract.functions.getByIndex(i));
+        listElementPromises.push(nodeRulesContract.getByIndex(i));
       }
       Promise.all(listElementPromises).then(responses => {
         const updatedNodeList = responses.map(r => {
-          const withStringyPort = { ...r, port: r.port.toString() };
+          //const withStringyPort = { ...r, port: r.port.toString() };
+          const withStringyPort = { ...r };
           return {
             ...withStringyPort,
             identifier: paramsToIdentifier(withStringyPort)

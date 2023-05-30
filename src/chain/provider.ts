@@ -1,4 +1,5 @@
-import { Provider, AsyncSendable } from 'ethers/providers';
+//import { Provider, AsyncSendable } from '@ethersproject/providers';
+import { Provider } from '@ethersproject/providers';
 import { ethers, Signer } from 'ethers';
 import Web3 from 'web3';
 
@@ -21,7 +22,8 @@ export const providerFactory = async () => {
   if (provider) return provider;
 
   const web3 = await web3Factory();
-  provider = new ethers.providers.Web3Provider(web3.currentProvider as AsyncSendable).getSigner();
+  //  provider = new ethers.providers.Web3Provider(web3.currentProvider as AsyncSendable).getSigner();
+  provider = new ethers.providers.Web3Provider(window.ethereum).getSigner();
 
   return provider;
 };

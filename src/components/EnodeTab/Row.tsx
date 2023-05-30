@@ -21,8 +21,6 @@ type EnodeRow = {
   openRemoveModal: (address: string) => void;
   enodeHigh: string;
   enodeLow: string;
-  ip: string;
-  port: string;
   nodeType: number;
   geoHash: string;
   organization: string;
@@ -37,8 +35,6 @@ const EnodeRow: React.FC<EnodeRow> = ({
   openRemoveModal,
   enodeHigh,
   enodeLow,
-  ip,
-  port,
   nodeType,
   geoHash,
   organization,
@@ -69,16 +65,6 @@ const EnodeRow: React.FC<EnodeRow> = ({
     <td>
       <Flex alignItems="center" className={styles.tooltipFix}>
         <TextWithTooltip isAdmin={isAdmin} status={status} text={`${enodeHigh}${enodeLow}`} />
-      </Flex>
-    </td>
-    <td>
-      <Flex alignItems="center" className={styles.tooltipFix}>
-        <TextWithTooltip isAdmin={isAdmin} status={status} text={hexToIp(ip)} />
-      </Flex>
-    </td>
-    <td>
-      <Flex alignItems="center" className={styles.tooltipFix}>
-        <TextWithTooltip isAdmin={isAdmin} status={status} text={port} />
       </Flex>
     </td>
     <td>
@@ -133,8 +119,6 @@ const EnodeRow: React.FC<EnodeRow> = ({
 EnodeRow.propTypes = {
   enodeHigh: PropTypes.string.isRequired,
   enodeLow: PropTypes.string.isRequired,
-  ip: PropTypes.string.isRequired,
-  port: PropTypes.string.isRequired,
   nodeType: PropTypes.number.isRequired,
   geoHash: PropTypes.string.isRequired,
   organization: PropTypes.string.isRequired,

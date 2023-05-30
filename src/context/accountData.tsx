@@ -27,11 +27,11 @@ const loadAccountData = (
     setAccountList([]);
     setAccountReadOnly(undefined);
   } else {
-    accountRulesContract.functions.isReadOnly().then(isReadOnly => setAccountReadOnly(isReadOnly));
-    accountRulesContract.functions.getSize().then(listSize => {
+    accountRulesContract.isReadOnly().then((isReadOnly: boolean) => setAccountReadOnly(isReadOnly));
+    accountRulesContract.getSize().then((listSize: { gt: (arg0: number) => any }) => {
       const listElementsPromises = [];
       for (let i = 0; listSize.gt(i); i++) {
-        listElementsPromises.push(accountRulesContract.functions.getByIndex(i));
+        listElementsPromises.push(accountRulesContract.getByIndex(i));
       }
       Promise.all(listElementsPromises).then(responses => {
         setAccountList(responses.map(address => ({ address })));
@@ -74,12 +74,12 @@ export const AccountDataProvider: React.FC<{}> = props => {
         setAccountRulesContract(contract);
         contract.removeAllListeners('AccountAdded');
         contract.removeAllListeners('AccountRemoved');
-        contract.on('AccountAdded', (success, account, event) => {
+        contract.on('AccountAdded', (success: boolean, account: any, event: any) => {
           if (success) {
             loadAccountData(contract, setAccountList, setAccountReadOnly);
           }
         });
-        contract.on('AccountRemoved', (success, account, event) => {
+        contract.on('AccountRemoved', (success: boolean, account: any, event: any) => {
           if (success) {
             loadAccountData(contract, setAccountList, setAccountReadOnly);
           }

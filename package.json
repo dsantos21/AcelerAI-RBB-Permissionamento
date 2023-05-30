@@ -16,7 +16,7 @@
     "coverage:contracts": "yarn truffle run coverage",
     "coverage": "yarn run coverage:contracts",
     "build:app": "sh scripts/wrap_env.sh 'yarn react-scripts build'",
-    "build:contracts": "yarn truffle compile && yarn typechain --target ethers --outDir ./src/chain/@types 'src/chain/abis/*.json'",
+    "build:contracts": "yarn truffle compile && yarn typechain --target ethers-v5 --out-dir ./src/chain/@types 'src/chain/abis/*.json'",
     "build": "yarn run build:contracts && yarn run build:app",
     "start": "sh scripts/wrap_env.sh 'yarn react-scripts start'",
     "eject": "yarn react-scripts eject"
@@ -40,6 +40,7 @@
     ]
   },
   "dependencies": {
+    "@typechain/ethers-v5": "^11.0.0",
     "@types/classnames": "^2.2.8",
     "@types/enzyme": "^3.9.3",
     "@types/enzyme-adapter-react-16": "^1.0.5",
@@ -50,7 +51,7 @@
     "@types/styled-components": "^4.1.15",
     "classnames": "^2.2.6",
     "dotenv": "^7.0.0",
-    "ethers": "^4.0.32",
+    "ethers": "^5.7.2",
     "idx": "^2.5.6",
     "jest-junit": "^6.4.0",
     "ngeohash": "^0.6.3",
@@ -63,10 +64,10 @@
     "rimble-ui": "^0.8.0",
     "styled-components": "^4.2.0",
     "truffle-hdwallet-provider": "^1.0.17",
-    "typescript": "^3.5.1",
+    "typescript": "^4.3.0",
     "utf8": "^3.0.0",
     "web3": "1.2.5",
-    "web3-utils": "^1.0.0-beta.52"
+    "web3-utils": "^1.10.0"
   },
   "devDependencies": {
     "enzyme": "^3.9.0",
@@ -85,7 +86,7 @@
     "truffle": "5.0.17",
     "truffle-typings": "^1.0.8",
     "ts-jest": "^24.0.2",
-    "typechain": "^0.3.17"
+    "typechain": "^8.2.0"
   },
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx,json,css}": [
