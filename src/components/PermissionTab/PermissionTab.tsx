@@ -2,10 +2,6 @@
 import React, { Fragment } from 'react';
 import PropTypes from 'prop-types'; // Components
 import PermissionTable from './Table';
-import AddModal from '../../containers/Modals/Add';
-import RemoveModal from '../../containers/Modals/Remove';
-// Constants
-import { addEnodeDisplay, removeEnodeDisplay } from '../../constants/modals';
 
 type Permission = {
   type: string;
@@ -25,6 +21,7 @@ type PermissionTab = {
   toggleModal: (name: 'add' | 'remove' | 'lock') => (value?: boolean | string) => void;
   isAdmin: boolean;
   deleteTransaction: (identifier: string) => void;
+  handleFilter: (value: any) => void;
   isOpen: boolean;
   isReadOnly: boolean;
 };
@@ -36,6 +33,7 @@ const PermissionTab: React.FC<PermissionTab> = ({
   isAdmin,
   isReadOnly,
   deleteTransaction,
+  handleFilter,
   isOpen
 }) => (
   <Fragment>
@@ -46,6 +44,7 @@ const PermissionTab: React.FC<PermissionTab> = ({
           toggleModal={toggleModal}
           isAdmin={isAdmin}
           deleteTransaction={deleteTransaction}
+          handleFilter={handleFilter}
           isReadOnly={isReadOnly}
         />
       </Fragment>
@@ -64,6 +63,7 @@ PermissionTab.propTypes = {
   isAdmin: PropTypes.bool.isRequired,
   isReadOnly: PropTypes.bool.isRequired,
   deleteTransaction: PropTypes.func.isRequired,
+  handleFilter: PropTypes.func.isRequired,
   isOpen: PropTypes.bool.isRequired
 };
 

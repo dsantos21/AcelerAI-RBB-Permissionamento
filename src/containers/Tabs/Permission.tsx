@@ -1,28 +1,17 @@
 // Libs
 import React from 'react';
 import PropTypes from 'prop-types';
-import idx from 'idx';
-import { utils } from 'ethers';
 // Context
 import { useAdminData } from '../../context/adminData';
 import { usePermissionData } from '../../context/permissionData';
 // Utils
 import useTab from './useTab';
 
-import { errorToast } from '../../util/tabTools';
+//import { errorToast } from '../../util/tabTools';
 // Components
 import PermissionTab from '../../components/PermissionTab/PermissionTab';
 import LoadingPage from '../../components/LoadingPage/LoadingPage';
 import NoContract from '../../components/Flashes/NoContract';
-// Constants
-import {
-  PENDING_ADDITION,
-  PENDING_REMOVAL,
-  FAIL_ADDITION,
-  FAIL_REMOVAL,
-  SUCCESS,
-  FAIL
-} from '../../constants/transactions';
 
 type PermissionTabContainerProps = {
   isOpen: boolean;
@@ -30,15 +19,31 @@ type PermissionTabContainerProps = {
 
 const PermissionTabContainer: React.FC<PermissionTabContainerProps> = ({ isOpen }) => {
   const { isAdmin, dataReady: adminDataReady } = useAdminData();
-  const { allowlist, isReadOnly, dataReady, permissionRulesContract } = usePermissionData();
-
-  const { list, modals, toggleModal, addTransaction, updateTransaction, deleteTransaction, openToast } = useTab(
+  const {
     allowlist,
-    (identifier: string) => allowlist[0]
-    //    identifierToParams
-  );
+    isReadOnly,
+    dataReady,
+    permissionRulesContract,
+    permissionFilter,
+    setPermissionFilter,
+    reload
+  } = usePermissionData();
+
+  const { list, modals, toggleModal, deleteTransaction } = useTab(allowlist, (identifier: string) => allowlist[0]);
 
   if (!!permissionRulesContract) {
+    //const handleFilter = async (value: any) => {
+    const handleFilter = (value: any) => {
+      const { authorizer, authorized } = value;
+
+      if (permissionFilter) {
+        permissionFilter.accountGrantee = authorized ? authorized : null;
+        permissionFilter.accountGrantor = authorizer ? authorizer : null;
+        setPermissionFilter(permissionFilter);
+        reload();
+      }
+    };
+
     const allDataReady = dataReady && adminDataReady;
     if (isOpen && allDataReady) {
       return (
@@ -48,6 +53,7 @@ const PermissionTabContainer: React.FC<PermissionTabContainerProps> = ({ isOpen 
           toggleModal={toggleModal}
           isAdmin={isAdmin}
           deleteTransaction={deleteTransaction}
+          handleFilter={handleFilter}
           isReadOnly={isReadOnly!}
           isOpen={isOpen}
         />

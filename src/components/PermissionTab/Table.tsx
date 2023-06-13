@@ -22,13 +22,20 @@ type PermissionTable = {
   list: (Permission & { status: string })[];
   toggleModal: (name: 'add' | 'remove' | 'lock') => (value?: boolean | string) => void;
   deleteTransaction: (identifier: string) => void;
+  handleFilter: (value: any) => void;
   isAdmin: boolean;
   isReadOnly: boolean;
 };
 
-const PermissionTable: React.FC<PermissionTable> = ({ list, toggleModal, deleteTransaction, isAdmin }) => (
+const PermissionTable: React.FC<PermissionTable> = ({
+  list,
+  toggleModal,
+  deleteTransaction,
+  handleFilter,
+  isAdmin
+}) => (
   <Box mt={5}>
-    <PermissionTableHeader />
+    <PermissionTableHeader number={list.length} handleFilter={handleFilter} />
     <Table mt={4}>
       <thead>
         <tr>
@@ -52,6 +59,7 @@ PermissionTable.propTypes = {
   list: PropTypes.array.isRequired,
   toggleModal: PropTypes.func.isRequired,
   deleteTransaction: PropTypes.func.isRequired,
+  handleFilter: PropTypes.func.isRequired,
   isAdmin: PropTypes.bool.isRequired
 };
 

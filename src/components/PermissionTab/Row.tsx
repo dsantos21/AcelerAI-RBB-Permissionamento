@@ -2,9 +2,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 // Rimble Components
-import { Pill, Flex, Button } from 'rimble-ui';
-// Constant
-import { PENDING_ADDITION, PENDING_REMOVAL, FAIL_ADDITION, FAIL_REMOVAL } from '../../constants/transactions';
+import { Flex } from 'rimble-ui';
 // Components
 import TextWithTooltip from './TextWithTooltip';
 import TextLinkWithTooltip from './TextLinkWithTooltip';

@@ -4,17 +4,20 @@ import { AccountRules } from '../chain/@types/AccountRules';
 import { accountRulesFactory } from '../chain/contracts/AccountRules';
 import { useNetwork } from './network';
 
-// Utils
-import { paramsToIdentifier, Enode as RawEnode } from '../util/enodetools';
-import { listenForAccountChange } from '../chain/provider';
-
-type Permission = {
+export type Permission = {
   type: string;
   authorizer: string;
   authorized: string;
   date: string;
   txHash: string;
   identifier: string;
+};
+
+export type PermissionFilter = {
+  accountAdded: boolean | null;
+  accountGrantee: string | null;
+  accountGrantor: string | null;
+  blockTimestamp: Date | null;
 };
 
 type ContextType =
@@ -25,6 +28,8 @@ type ContextType =
       setAccountReadOnly: React.Dispatch<React.SetStateAction<boolean | undefined>>;
       permissionRulesContract?: AccountRules;
       setAccountRulesContract: React.Dispatch<React.SetStateAction<AccountRules | undefined>>;
+      permissionFilter?: PermissionFilter;
+      setPermissionFilter: React.Dispatch<React.SetStateAction<PermissionFilter>>;
     }
   | undefined;
 
@@ -33,16 +38,24 @@ const DataContext = createContext<ContextType>(undefined);
 const loadPermissionData = (
   accountRulesContract: AccountRules | undefined,
   setPermissionList: (account: Permission[]) => void,
-  setAccountReadOnly: (readOnly?: boolean) => void
+  setAccountReadOnly: (readOnly?: boolean) => void,
+  filter: PermissionFilter | undefined
 ) => {
   if (accountRulesContract === undefined) {
     setPermissionList([]);
     setAccountReadOnly(undefined);
   } else {
-    const listPermission: Permission[] = [];
-    //accountRulesContract.isReadOnly().then((isReadOnly: boolean) => setAccountReadOnly(isReadOnly));
-    let filter = accountRulesContract.filters.AccountAdded(null, null, null, null);
-    accountRulesContract.queryFilter(filter).then(events => {
+    if (!filter) {
+      filter = { accountAdded: null, accountGrantee: null, accountGrantor: null, blockTimestamp: null };
+    }
+    let eventFilter = accountRulesContract.filters.AccountAdded(
+      null,
+      filter.accountGrantee,
+      filter.accountGrantor,
+      null
+    );
+
+    accountRulesContract.queryFilter(eventFilter).then(events => {
       setPermissionList(
         events.map(e => {
           const d = new Date(e.args[3].toNumber() * 1000);
@@ -61,11 +74,6 @@ const loadPermissionData = (
 
     setAccountReadOnly(false);
   }
-  /*
-  if (permissionRulesContract != undefined) {
-    permissionRulesContract.getPastEvents('AllEvents').then((events: any) => console.log(events));
-  }
-*/
 };
 
 /**
@@ -79,6 +87,12 @@ export const PermissionDataProvider: React.FC<{}> = props => {
   const [permissionList, setPermissionList] = useState<Permission[]>([]);
   const [accountReadOnly, setAccountReadOnly] = useState<boolean | undefined>(undefined);
   const [permissionRulesContract, setAccountRulesContract] = useState<AccountRules | undefined>(undefined);
+  const [permissionFilter, setPermissionFilter] = useState<PermissionFilter>({
+    accountAdded: null,
+    accountGrantee: null,
+    accountGrantor: null,
+    blockTimestamp: null
+  });
 
   const value = useMemo(
     () => ({
@@ -87,7 +101,9 @@ export const PermissionDataProvider: React.FC<{}> = props => {
       accountReadOnly,
       setAccountReadOnly,
       permissionRulesContract,
-      setAccountRulesContract
+      setAccountRulesContract,
+      permissionFilter,
+      setPermissionFilter
     }),
     [
       permissionList,
@@ -95,7 +111,9 @@ export const PermissionDataProvider: React.FC<{}> = props => {
       accountReadOnly,
       setAccountReadOnly,
       permissionRulesContract,
-      setAccountRulesContract
+      setAccountRulesContract,
+      permissionFilter,
+      setPermissionFilter
     ]
   );
 
@@ -110,14 +128,14 @@ export const PermissionDataProvider: React.FC<{}> = props => {
         contract.removeAllListeners('AccountAdded');
         contract.removeAllListeners('AccountRemoved');
         contract.on('AccountAdded', () => {
-          loadPermissionData(contract, setPermissionList, setAccountReadOnly);
+          loadPermissionData(contract, setPermissionList, setAccountReadOnly, permissionFilter);
         });
         contract.on('AccountRemoved', () => {
-          loadPermissionData(contract, setPermissionList, setAccountReadOnly);
+          loadPermissionData(contract, setPermissionList, setAccountReadOnly, permissionFilter);
         });
       });
     }
-  }, [accountIngressContract]);
+  }, [accountIngressContract, permissionFilter]);
 
   return <DataContext.Provider value={value} {...props} />;
 };
@@ -132,16 +150,28 @@ export const PermissionDataProvider: React.FC<{}> = props => {
  *  - allowlist: list of permitted nodes from Node contract,
  */
 export const usePermissionData = () => {
+  function reload() {
+    loadPermissionData(permissionRulesContract, setPermissionList, setAccountReadOnly, permissionFilter);
+  }
+
   const context = useContext(DataContext);
   if (!context) {
     throw new Error('usePermissionData must be used within a PermissionDataProvider.');
   }
 
-  const { permissionList, setPermissionList, accountReadOnly, setAccountReadOnly, permissionRulesContract } = context;
+  const {
+    permissionList,
+    setPermissionList,
+    accountReadOnly,
+    setAccountReadOnly,
+    permissionRulesContract,
+    permissionFilter,
+    setPermissionFilter
+  } = context;
 
   useEffect(() => {
-    loadPermissionData(permissionRulesContract, setPermissionList, setAccountReadOnly);
-  }, [permissionRulesContract, setPermissionList, setAccountReadOnly]);
+    loadPermissionData(permissionRulesContract, setPermissionList, setAccountReadOnly, permissionFilter);
+  }, [permissionRulesContract, setPermissionList, setAccountReadOnly, setPermissionFilter, permissionFilter]);
 
   const formattedPermissionList = useMemo(() => {
     return permissionList
@@ -160,6 +190,10 @@ export const usePermissionData = () => {
     dataReady,
     allowlist: formattedPermissionList,
     isReadOnly: accountReadOnly,
-    permissionRulesContract
+    permissionRulesContract,
+    setPermissionList,
+    permissionFilter,
+    setPermissionFilter,
+    reload
   };
 };
