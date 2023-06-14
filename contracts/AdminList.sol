@@ -5,13 +5,17 @@ pragma solidity 0.5.9;
 contract AdminList {
     event AdminAdded(
         bool adminAdded,
-        address account,
+        address indexed accountGrantee,
+        address indexed accountGrantor,
+        uint indexed blockTimestamp,
         string message
     );
 
     event AdminRemoved(
         bool adminRemoved,
-        address account
+        address indexed accountGrantee,
+        address indexed accountGrantor,
+        uint indexed blockTimestamp
     );
 
     address[] public allowlist;
