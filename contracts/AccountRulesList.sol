@@ -4,16 +4,16 @@ pragma solidity 0.5.9;
 contract AccountRulesList {
     event AccountAdded(
         bool accountAdded,
-        address accountGrantee,
-        address accountGrantor,
-        uint blockTimestamp
+        address indexed accountGrantee,
+        address indexed accountGrantor,
+        uint indexed blockTimestamp
     );
 
     event AccountRemoved(
         bool accountRemoved,
-        address accountGrantee,
-        address accountGrantor,
-        uint blockTimestamp
+        address indexed accountGrantee,
+        address indexed accountGrantor,
+        uint indexed blockTimestamp
     );
 
     address[] public allowlist;
