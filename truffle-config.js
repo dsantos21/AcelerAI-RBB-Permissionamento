@@ -25,8 +25,8 @@ module.exports = {
      gasPrice: 0
     },
     develop: {
-      host: '127.0.0.1',
-      port: 7545,
+      //host: '127.0.0.1',
+      //port: 7545,
       network_id: '*'
     }
   },
