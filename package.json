@@ -7,16 +7,17 @@
     "test": "test"
   },
   "scripts": {
-    "test": "yarn truffle test"
+    "test": "if exist \"C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js\" (yarn truffle test) else (powershell -c \"if (!(Test-Path 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js')) { New-Item -ItemType Directory -Force -Path 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\'; Import-Module BitsTransfer; Start-BitsTransfer 'https://github.com/RBBNet/start-network/releases/download/0.1/solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js' 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js' -UseStoredCredential proxy }\" && yarn truffle test)",
+    "develop": "if exist \"C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js\" (yarn truffle develop) else (powershell -c \"if (!(Test-Path 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js')) { New-Item -ItemType Directory -Force -Path 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\'; Import-Module BitsTransfer; Start-BitsTransfer 'https://github.com/RBBNet/start-network/releases/download/0.1/solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js' 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js' -UseStoredCredential proxy }\" && yarn truffle develop)"
   },
   "dependencies": {
+    "babel-runtime": "^6.26.0",
     "dotenv": "^7.0.0",
     "truffle-hdwallet-provider": "^1.0.17",
-    "web3-utils": "^1.5.3",
-    "babel-runtime": "^6.26.0"
+    "web3-utils": "^1.5.3"
   },
   "devDependencies": {
-    "truffle": "5.3.3"
+    "truffle": "5.11.1"
   },
   "repository": {
     "type": "git",

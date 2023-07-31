@@ -24,10 +24,10 @@ module.exports = {
      from: address,
      gasPrice: 0
     },
-    ganache: {
+    develop: {
       host: '127.0.0.1',
       port: 7545,
-      network_id: '*',
+      network_id: '*'
     }
   },
 
