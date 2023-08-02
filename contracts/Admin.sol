@@ -50,9 +50,16 @@ contract Admin is AdminProxy, AdminList {
     }
 
     function removeAdmin(address _address) public onlyAdmin notSelf(_address) returns (bool) {
-        bool removed = remove(_address);
-        emit AdminRemoved(removed, _address, msg.sender, block.timestamp);
-        return removed;
+        if (block.timestamp < lastCallTimestamp[msg.sender] + 1 days){
+            emit AdminRemoved(false, _address, msg.sender, block.timestamp);
+            return false;
+        }
+        else {
+            bool removed = remove(_address);
+            emit AdminRemoved(removed, _address, msg.sender, block.timestamp);
+            return removed;
+        }
+
     }
 
     function getAdmins() public view returns (address[] memory){
