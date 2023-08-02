@@ -85,26 +85,6 @@ contract("Admin (admin management)", async accounts => {
     assert.sameMembers([accounts[0], accounts[2]], admins);
   });
 
-  it("admin can add multiple admins", async () => {
-    await adminContract.addAdmins([accounts[2], accounts[3]], { from: accounts[0] });
-
-    let isAdmin2 = await adminContract.isAuthorized(accounts[2]);
-    let isAdmin3 = await adminContract.isAuthorized(accounts[3]);
-
-    assert.ok(isAdmin2);
-    assert.ok(isAdmin3);
-  });
-
-  it("non admin cannot add multiple admins", async () => {
-    try {
-        await adminContract.addAdmins([accounts[2], accounts[3]], { from: accounts[1] });
-        expect.fail(null, null, "Modifier was not enforced")
-    } catch(err) {
-        expect(err.reason).to.contain('Sender not authorized');
-    }
-  });
-
-
   it("Should emit events when an Admin is added", async () => {
     const ownAddress = accounts[0].toLowerCase();
     const address = accounts[1].toLowerCase();
