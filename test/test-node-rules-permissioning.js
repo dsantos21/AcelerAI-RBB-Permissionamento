@@ -1,6 +1,7 @@
 const NodeIngressContract = artifacts.require('NodeIngress.sol');
 const NodeRulesContract = artifacts.require('NodeRules.sol');
 const AdminContract = artifacts.require('Admin.sol');
+const { time } = require('@openzeppelin/test-helpers');
 
 // Contract keys
 const RULES_NAME = "0x72756c6573000000000000000000000000000000000000000000000000000000";
@@ -148,6 +149,7 @@ contract("NodeRules (Permissioning)", (accounts) => {
   });
 
   it('should allow new admin account to add node to list', async () => {
+    await time.increase(time.duration.days(1)); // Avança 1 dia
     await adminContract.addAdmin(accounts[2]);
 
     await nodeRulesContract.addEnode(node1High, node1Low, node1Type, node1GeoHash, node1Name, node1Organization, { from: accounts[2] });
