@@ -1,7 +1,7 @@
 const IngressContract = artifacts.require('Ingress.sol');
 const RulesContract = artifacts.require('AccountRules.sol');
 const AdminContract = artifacts.require('Admin.sol');
-
+const { time } = require('@openzeppelin/test-helpers');
 // Contract keys
 const RULES_NAME = "0x72756c6573000000000000000000000000000000000000000000000000000000";
 const ADMIN_NAME = "0x61646d696e697374726174696f6e000000000000000000000000000000000000";
@@ -139,8 +139,8 @@ contract("Account Rules (Permissioning)", (accounts) => {
   });
 
   it('should allow new admin account to add to allowlist', async () => {
+    await time.increase(time.duration.days(1));
     await adminContract.addAdmin(accounts[2]);
-
     await rulesContract.addAccount(address1, { from: accounts[2] });
 
     let permitted = await rulesContract.accountPermitted(address1);
