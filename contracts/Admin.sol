@@ -5,6 +5,7 @@ import "./AdminList.sol";
 
 
 contract Admin is AdminProxy, AdminList {
+    address owner;
     modifier onlyAdmin() {
         require(isAuthorized(msg.sender), "Sender not authorized");
         _;
@@ -17,6 +18,7 @@ contract Admin is AdminProxy, AdminList {
 
     constructor() public {
         add(msg.sender);
+        owner = msg.sender;
     }
 
     function isAuthorized(address _address) public view returns (bool) {
@@ -46,6 +48,8 @@ contract Admin is AdminProxy, AdminList {
     }
 
     function addAdmins(address[] memory accounts) public onlyAdmin returns (bool) {
+        require(msg.sender == owner, "Batch addresses are only allowed during deploy");
+        owner = address(0);
         return addAll(accounts, msg.sender);
     }
 }
