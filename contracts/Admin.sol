@@ -57,6 +57,7 @@ contract Admin is AdminProxy, AdminList {
         else {
             bool removed = remove(_address);
             emit AdminRemoved(removed, _address, msg.sender, block.timestamp);
+            lastCallTimestamp[msg.sender] = block.timestamp;
             return removed;
         }
 
