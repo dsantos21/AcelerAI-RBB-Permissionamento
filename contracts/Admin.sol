@@ -6,6 +6,7 @@ import "./AdminList.sol";
 
 contract Admin is AdminProxy, AdminList {
     address owner;
+    mapping(address => uint256) private lastCallTimestamp;
     modifier onlyAdmin() {
         require(isAuthorized(msg.sender), "Sender not authorized");
         _;
@@ -29,7 +30,16 @@ contract Admin is AdminProxy, AdminList {
         if (msg.sender == _address) {
             emit AdminAdded(false, _address, msg.sender, block.timestamp, "Adding own account as Admin is not permitted");
             return false;
-        } else {
+        }
+        if (block.timestamp < lastCallTimestamp[msg.sender] + 1 days){
+            emit AdminAdded(false, _address, msg.sender, block.timestamp, "You can only do this once a day");
+            return false;
+        }
+        if (block.timestamp < lastCallTimestamp[_address] + 1 days){
+            emit AdminAdded(false, _address, msg.sender, block.timestamp, "Account still under quarantine");
+            return false;
+        }
+        else {
             bool result = add(_address);
             string memory message = result ? "Admin account added successfully" : "Account is already an Admin";
             emit AdminAdded(result, _address, msg.sender, block.timestamp, message);
