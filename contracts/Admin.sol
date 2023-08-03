@@ -26,6 +26,11 @@ contract Admin is AdminProxy, AdminList {
         return exists(_address);
     }
 
+    function getAdminSize() public view returns (uint256) {
+        address[] memory admins = getAdmins();
+        return admins.length;
+    }
+
     function addAdmin(address _address) public onlyAdmin returns (bool) {
         if (msg.sender == _address) {
             emit AdminAdded(false, _address, msg.sender, block.timestamp, "Adding own account as Admin is not permitted");
