@@ -5,8 +5,10 @@ import "./AdminList.sol";
 
 
 contract Admin is AdminProxy, AdminList {
-    address owner;
+
     mapping(address => uint256) private lastCallTimestamp;
+    address owner;
+
     modifier onlyAdmin() {
         require(isAuthorized(msg.sender), "Sender not authorized");
         _;
@@ -22,13 +24,13 @@ contract Admin is AdminProxy, AdminList {
         owner = msg.sender;
     }
 
-    function isAuthorized(address _address) public view returns (bool) {
-        return exists(_address);
-    }
-
     function getAdminSize() public view returns (uint256) {
         address[] memory admins = getAdmins();
         return admins.length;
+    }
+
+    function isAuthorized(address _address) public view returns (bool) {
+        return exists(_address);
     }
 
     function addAdmin(address _address) public onlyAdmin returns (bool) {
