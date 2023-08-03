@@ -20,7 +20,7 @@ const node2Host = "0x0000000000000000000011119bd359fd";
 const node2Port = 30304;
 
 const address2 = "0x345ca3e014aaf5dca488057592ee47305d9b3e10".toLowerCase();
-
+const { time } = require('@openzeppelin/test-helpers');
 contract ("Node Ingress (no contracts registered)", (accounts) => {
     let nodeIngressContract;
     let nodeRulesContract;
@@ -64,9 +64,12 @@ contract ("Node Ingress (no contracts registered)", (accounts) => {
     it("Should register contract successfully", async () => {
         // Verify that the NodeRules contract has not yet been registered
         let result = await nodeIngressContract.getContractAddress(RULES);
+
         assert.equal(result, "0x0000000000000000000000000000000000000000", "NodeRules contract should NOT already be registered");
 
         // Register the NodeRules contract
+        //por motivos de: você não pode registrar um contrato sem um endereço de admin, o adminContract tem que ser registrado antes do rules. Isso vai se repetir várias vezes pelos testes.
+        result = await nodeIngressContract.setContractAddress(ADMIN, adminContract.address);
         result = await nodeIngressContract.setContractAddress(RULES, nodeRulesContract.address);
 
         // assert values in the RegistryUpdated event
@@ -79,62 +82,24 @@ contract ("Node Ingress (no contracts registered)", (accounts) => {
     });
 
       it("Should return all registered contracts", async () => {
-        // Register a NodeRules contract
-        let result = await nodeIngressContract.setContractAddress(RULES, nodeRulesContract.address);
-
-        // assert values in the RegistryUpdated event
-        assert.equal(result.logs[0].args[0], nodeRulesContract.address, "Event address SHOULD be correct");
-        assert.equal(result.logs[0].args[1], RULES, "Event name SHOULD be correct");
-
-        // Register an "Admin" contract
-        result = await nodeIngressContract.setContractAddress(ADMIN, adminContract.address);
-
-        // assert values in the RegistryUpdated event
+        let result = await nodeIngressContract.setContractAddress(ADMIN, adminContract.address);
         assert.equal(result.logs[0].args[0], adminContract.address, "Event address SHOULD be correct");
         assert.equal(result.logs[0].args[1], ADMIN, "Event name SHOULD be correct");
 
+        result = await nodeIngressContract.setContractAddress(RULES, nodeRulesContract.address);
+        assert.equal(result.logs[0].args[0], nodeRulesContract.address, "Event address SHOULD be correct");
+        assert.equal(result.logs[0].args[1], RULES, "Event name SHOULD be correct");
         result = await nodeIngressContract.getAllContractKeys();
-
-        assert.equal(result[0], RULES, "NodeRules contract SHOULD be registered");
-        assert.equal(result[1], ADMIN, "Admin contract SHOULD be registered");
+        assert.equal(result[0], ADMIN, "Admin contract SHOULD be registered");
+        assert.equal(result[1], RULES, "NodeRules contract SHOULD be registered");
       });
 
-      it("Should delete a specified contract", async () => {
-        // Verify that the NodeRules contract has not yet been registered
-        let result = await nodeIngressContract.getContractAddress(RULES);
-        assert.equal(result, "0x0000000000000000000000000000000000000000", "NodeRules contract should NOT already be registered");
-
-        // Register the NodeRules contract
-        result = await nodeIngressContract.setContractAddress(RULES, nodeRulesContract.address);
-
-        // Verify the NodeRules contract address
-        result = await nodeIngressContract.getContractAddress(RULES);
-        assert.equal(result, nodeRulesContract.address, "NodeRules contract address SHOULD be correct");
-
-        // Verify correct number of Contracts
-        result = await nodeIngressContract.getAllContractKeys();
-        assert.equal(result.length, 1, "1 key SHOULD be registered");
-
-        // Delete the NodeRules contract
-        result = await nodeIngressContract.removeContract(RULES);
-
-        // assert values in the RegistryUpdated event
-        assert.equal(result.logs[0].args[0], 0, "Event address from REMOVE SHOULD be zero");
-        assert.equal(result.logs[0].args[1], RULES, "Event name SHOULD be correct");
-
-        // Verify that the NodeRules contract has been deleted
-        result = await nodeIngressContract.getContractAddress(RULES);
-        assert.equal(result, "0x0000000000000000000000000000000000000000", "NodeRules contract SHOULD have been deleted");
-
-        // Verify correct number of Contracts
-        result = await nodeIngressContract.getAllContractKeys();
-        assert.equal(result.length, 0, "0 keys SHOULD be registered");
-    });
 
     it('Should update a specified contract', async () => {
         let result;
 
          // Verify that the NodeRules contract has not yet been registered
+        result = await nodeIngressContract.setContractAddress(ADMIN, adminContract.address);
         result = await nodeIngressContract.getContractAddress(RULES);
         assert.equal(result, "0x0000000000000000000000000000000000000000", 'NodeRules contract should NOT already be registered');
 
@@ -147,7 +112,7 @@ contract ("Node Ingress (no contracts registered)", (accounts) => {
 
          // Verify correct number of Contracts
         result = await nodeIngressContract.getAllContractKeys();
-        assert.equal(result.length, 1, '1 key SHOULD be registered');
+        assert.equal(result.length, 2, '2 keys SHOULD be registered');
 
          // Update the NodeRules contract
         result = await nodeIngressContract.setContractAddress(RULES, address2);
@@ -162,10 +127,10 @@ contract ("Node Ingress (no contracts registered)", (accounts) => {
 
          // Verify correct number of Contracts
         result = await nodeIngressContract.getAllContractKeys();
-        assert.equal(result.length, 1, '1 keys SHOULD be registered');
+        assert.equal(result.length, 2, '2 keys SHOULD be registered');
     });
 });
-
+//
 contract("Ingress contract", (accounts) => {
     let nodeIngressContract;
     let nodeRulesContract;
@@ -192,62 +157,57 @@ contract("Ingress contract", (accounts) => {
             expect(err.reason).to.contain("Not authorized to update contract registry");
         }
 
-        // Attempt to remove the Admin contract
-        try {
-            await nodeIngressContract.removeContract(ADMIN, { from: accounts[1] });
-            assert.fail("Unauthorized sender was able to remove Contract in registry");
-        } catch (err) {
-            expect(err.reason).to.contain("Not authorized to update contract registry");
-        }
     });
-
+//
     it("Should allow authorized account to perform administration operations", async () => {
+        //operações autorizadas: adicionar contrato... e só.
         const CONTRACT_NAME="0x666f6f0000000000000000000000000000000000000000000000000000000000";
         const CONTRACT_ADDR="0x1111111111111111111111111111111111111111";
-
-        // Verify sender is initially authorized
+        //
+        // // Verify sender is initially authorized
         let result = await nodeIngressContract.isAuthorized(accounts[0]);
         assert.equal(result, true, "Sender account SHOULD be authorized");
-
-        // try to remove non existent contract. should have no effect
-        await nodeIngressContract.removeContract(CONTRACT_NAME);
-
-        // Register the NodeRules contract
+        //
+        // // try to remove non existent contract. should have no effect
+        // await nodeIngressContract.removeContract(CONTRACT_NAME);
+        //
+        // // Register the NodeRules contract
         await nodeIngressContract.setContractAddress(CONTRACT_NAME, CONTRACT_ADDR);
-
-        // Verify the NodeRules contract is registered
+        //
+        // // Verify the NodeRules contract is registered
         result = await nodeIngressContract.getContractAddress(CONTRACT_NAME);
         assert.equal(result, CONTRACT_ADDR, "Contract SHOULD be registered");
 
-        // Verify correct number of Contracts
+        //
+        // // Verify correct number of Contracts
         result = await nodeIngressContract.getAllContractKeys();
         assert.equal(result.length, 3, "3 keys SHOULD be registered");
-
-        // Remove the NodeRules contract ie not the last one
-        await nodeIngressContract.removeContract(RULES);
-
-        // Verify that the NodeRules contract has been removed
-        result = await nodeIngressContract.getContractAddress(RULES);
-        assert.equal(result, "0x0000000000000000000000000000000000000000", "Contract should NOT be registered");
-
-        // Verify correct number of Contracts
-        result = await nodeIngressContract.getAllContractKeys();
-        assert.equal(result.length, 2, "2 keys SHOULD be registered");
-        result = await nodeIngressContract.getSize();
-        assert.equal(result, 2, "2 keys SHOULD be registered");
-
-        // Remove the new contract
-        await nodeIngressContract.removeContract(CONTRACT_NAME);
-
-        // Verify that the new contract has been removed
-        result = await nodeIngressContract.getContractAddress(CONTRACT_NAME);
-        assert.equal(result, "0x0000000000000000000000000000000000000000", "Contract should NOT be registered");
-
-        // Verify correct number of Contracts
-        result = await nodeIngressContract.getAllContractKeys();
-        assert.equal(result.length, 1, "1 keys SHOULD be registered");
+        //
+        // // Remove the NodeRules contract ie not the last one
+        // await nodeIngressContract.removeContract(RULES);
+        //
+        // // Verify that the NodeRules contract has been removed
+        // result = await nodeIngressContract.getContractAddress(RULES);
+        // assert.equal(result, "0x0000000000000000000000000000000000000000", "Contract should NOT be registered");
+        //
+        // // Verify correct number of Contracts
+        // result = await nodeIngressContract.getAllContractKeys();
+        // assert.equal(result.length, 2, "2 keys SHOULD be registered");
+        // result = await nodeIngressContract.getSize();
+        // assert.equal(result, 2, "2 keys SHOULD be registered");
+        //
+        // // Remove the new contract
+        // await nodeIngressContract.removeContract(CONTRACT_NAME);
+        //
+        // // Verify that the new contract has been removed
+        // result = await nodeIngressContract.getContractAddress(CONTRACT_NAME);
+        // assert.equal(result, "0x0000000000000000000000000000000000000000", "Contract should NOT be registered");
+        //
+        // // Verify correct number of Contracts
+        // result = await nodeIngressContract.getAllContractKeys();
+        // assert.equal(result.length, 1, "1 keys SHOULD be registered");
     });
-
+//
     it("Should emit an event when the NodeRules are updated", async () => {
         //Add a more restrictive rule
         await nodeRulesContract.addEnode(node1High, node1Low, node1Type, node1GeoHash, node1Name, node1Organization, { from: accounts[0] });
@@ -267,7 +227,7 @@ contract("Ingress contract", (accounts) => {
         // Verify the NodePermissionsUpdated event
         assert.equal(result[1].returnValues.addsRestrictions, true, "addsRestrictions SHOULD be true");
     });
-
+//
     it("Should only trigger NodeRules update events when issued from NodeRules contract", async () => {
         let result;
 
@@ -310,4 +270,72 @@ contract("Ingress contract", (accounts) => {
         // Verify the NodePermissionsUpdated event
         assert.equal(result.length, 1, "Number of events SHOULD be 1");
     });
+
+//-------------------------------------------------------------TESTES NOVOS-----------------------------------------------------------------------------
+
+    it("Voting system should work properly", async () => {
+        //mudar o nome desse teste.
+        let isAuthorized, result, address;
+        isAuthorized = await adminContract.isAuthorized(accounts[0]);
+        result = await nodeIngressContract.setContractAddress(ADMIN, adminContract.address);
+
+
+        result = await adminContract.addAdmin(accounts[1], {from: accounts[0]})
+        await time.increase(time.duration.days(1));
+        isAuthorized = await adminContract.isAuthorized(accounts[1]);
+
+        result = await adminContract.addAdmin(accounts[2], {from: accounts[0]})
+        await time.increase(time.duration.days(1));
+        isAuthorized = await adminContract.isAuthorized(accounts[2]);
+
+
+
+        //1 - não pode deixar uma pessoa só mudar o endereço de um contrato
+        const CONTRACT_ADDR="0x1111111111111111111111111111111111111111";
+        result = await nodeIngressContract.setContractAddress(ADMIN, CONTRACT_ADDR,{from: accounts[0]});
+        address = await nodeIngressContract.getContractAddress(ADMIN);
+        assert.ok(address != CONTRACT_ADDR);
+
+        //2 - não pode deixar duas pessoas mudarem o endereço de um contrato
+        result = await nodeIngressContract.setContractAddress(ADMIN, CONTRACT_ADDR, {from: accounts[1]});
+        address = await nodeIngressContract.getContractAddress(ADMIN);
+        assert.ok(address != CONTRACT_ADDR);
+
+        //3 - três pessoas juntas podem mudar o endereço de um contrato
+        result = await nodeIngressContract.setContractAddress(ADMIN, CONTRACT_ADDR, {from: accounts[2]});
+        address = await nodeIngressContract.getContractAddress(ADMIN);
+        assert.ok(address == CONTRACT_ADDR);
+    });
+    
+    it("Proposals should perish in seven days", async () => {
+        let isAuthorized, result, address;
+        isAuthorized = await adminContract.isAuthorized(accounts[0]);
+        result = await nodeIngressContract.setContractAddress(ADMIN, adminContract.address);
+
+        result = await adminContract.addAdmin(accounts[1], {from: accounts[0]})
+        await time.increase(time.duration.days(1));
+        isAuthorized = await adminContract.isAuthorized(accounts[1]);
+
+        result = await adminContract.addAdmin(accounts[2], {from: accounts[0]})
+        await time.increase(time.duration.days(1));
+        isAuthorized = await adminContract.isAuthorized(accounts[2]);
+
+        const CONTRACT_ADDR="0x1111111111111111111111111111111111111111";
+        result = await nodeIngressContract.setContractAddress(ADMIN, CONTRACT_ADDR,{from: accounts[0]});
+        address = await nodeIngressContract.getContractAddress(ADMIN);
+        result = await nodeIngressContract.setContractAddress(ADMIN, CONTRACT_ADDR, {from: accounts[1]});
+        address = await nodeIngressContract.getContractAddress(ADMIN);
+        assert.ok(address != CONTRACT_ADDR);
+        //
+        await time.increase(time.duration.days(8));
+        //Votando em uma eleição que já acabou
+
+        result = await nodeIngressContract.setContractAddress(ADMIN, CONTRACT_ADDR, {from: accounts[0]});
+        address = await nodeIngressContract.getContractAddress(ADMIN);
+        assert.ok(address != CONTRACT_ADDR);
+    });
+
+
+
+
 });
