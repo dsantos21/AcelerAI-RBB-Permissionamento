@@ -54,43 +54,47 @@ contract Ingress {
 
     }
 
+    function voting(bytes32 name, address addr) private returns (uint256){
+        votes[name][addr].voters[msg.sender] = true;
+        votes[name][addr].count++;
+        votes[name][addr].lastVoteTimeStamp = block.timestamp;
+        return votes[name][addr].count;
+    }
+
     function setContractAddress(bytes32 name, address addr) public returns (bool) {
-        require(name > 0, "Contract name must not be empty.");
+        require(name != bytes32(0), "Contract name must not be empty.");
         require(addr != address(0), "Contract address must not be zero.");
         require(isAuthorized(msg.sender), "Not authorized to update contract registry.");
-
+        uint256 vote;
         if (registry[ADMIN_CONTRACT] == address(0)) {
             setPrivateContractAddress(name, addr);
+            return true;
         }
 
         if (AdminProxy(registry[ADMIN_CONTRACT]).getAdminSize() < 3) {
-            // Less than 3 admins, setting the address directly
             setPrivateContractAddress(name, addr);
+            return true;
+        }
+
+        // Verifica se já passaram 7 dias desde a última votação
+        if (block.timestamp > votes[name][addr].lastVoteTimeStamp + 7 days){
+            delete votes[name][addr];
+            vote = voting(name, addr);
         } else {
-            //se já passaram 7 dias, exclui a votação
-            if (block.timestamp > votes[name][addr].lastVoteTimeStamp + 7 days){
-                delete votes[name][addr];
-                
-
-
-
-            }
-            //senão, pode seguir
             require(!votes[name][addr].voters[msg.sender], "Already voted for this proposal");
+            vote = voting(name, addr);
+        }
 
-            votes[name][addr].voters[msg.sender] = true; // record the vote
-            votes[name][addr].count++;
-            votes[name][addr].lastVoteTimeStamp = block.timestamp;
-            if(votes[name][addr].count >= 3) {
-                setPrivateContractAddress(name, addr);
+        if(vote >= 3) {
+            setPrivateContractAddress(name, addr);
 
-                // Reset the votes
-                delete votes[name][addr];
-            }
+            // Reset the votes
+            delete votes[name][addr];
         }
 
         return true;
     }
+
 
     function getTotalVotes(bytes32 name, address addr) public view returns (uint256){
         uint256 totalVotes = votes[name][addr].count;
