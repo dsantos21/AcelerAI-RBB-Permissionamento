@@ -1,4 +1,4 @@
 node_modules/
 src/
-yarn.lock
+.env
 yarn-error.log
