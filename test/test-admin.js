@@ -1,5 +1,7 @@
 const Admin = artifacts.require('Admin.sol');
 
+//TESTE TESTE
+
 contract("Admin (admin management)", async accounts => {
 
   let adminContract;
