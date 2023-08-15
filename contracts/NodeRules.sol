@@ -35,6 +35,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
 
     modifier onlyOwner(){
         require(msg.sender == owner, "Only an owner can call this function.");
+        _;
     }
 
     modifier onlyAdmin() {
