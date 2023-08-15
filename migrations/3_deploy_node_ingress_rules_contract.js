@@ -61,6 +61,6 @@ module.exports = async(deployer, network) => {
     await nodeRulesContract.finishDeploy();
     console.log("Deploy step finished");
     
-    await nodeIngressInstance.triggerRulesChangeEvent(false);
+    await nodeRulesContract.triggerRulesChangeEvent(false);
     console.log("Trigger called");
 }
