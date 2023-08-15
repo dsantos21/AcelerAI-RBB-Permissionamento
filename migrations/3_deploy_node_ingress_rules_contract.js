@@ -57,6 +57,10 @@ module.exports = async(deployer, network) => {
     }
     await nodeIngressInstance.setContractAddress(rulesContractName, NodeRules.address);
     console.log("   > Updated NodeIngress contract with NodeRules address = " + NodeRules.address);
-
+    
+    await nodeRulesContract.finishDeploy();
+    console.log("Deploy step finished");
+    
     await nodeIngressInstance.triggerRulesChangeEvent(false);
+    console.log("Trigger called");
 }
