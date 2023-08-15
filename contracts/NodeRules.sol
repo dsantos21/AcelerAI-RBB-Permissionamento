@@ -33,6 +33,10 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         _;
     }
 
+    modifier onlyOwner(){
+        require(msg.sender == owner, "Only an owner can call this function.");
+    }
+
     modifier onlyAdmin() {
         address adminContractAddress = nodeIngressContract.getContractAddress(nodeIngressContract.ADMIN_CONTRACT());
 
@@ -100,17 +104,20 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         return exists(enodeHigh, enodeLow);
     }
 
-    function addInitialNode(
+    function addNodeDuringDeploy(
         bytes32 enodeHigh,
         bytes32 enodeLow,
         NodeType nodeType,
         bytes6 geoHash,
         string memory name,
         string memory organization
-    ) public onlyAdmin onlyOnEditMode returns (bool){
+    ) public onlyAdmin onlyOnEditMode onlyOwner returns (bool){
         bool added = add(enodeHigh, enodeLow, nodeType, geoHash, name, organization);
-        owner = address(0);
         return added;
+    }
+
+    function finishDeploy () public {
+        owner = address(0);
     }
 
     function addEnode(
