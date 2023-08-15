@@ -43,6 +43,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
 
     constructor (NodeIngress _nodeIngressAddress) public {
         nodeIngressContract = _nodeIngressAddress;
+        owner = msg.sender;
     }
 
     // VERSION
