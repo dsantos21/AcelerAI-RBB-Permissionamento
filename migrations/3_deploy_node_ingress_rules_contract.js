@@ -37,9 +37,6 @@ module.exports = async(deployer, network) => {
     console.log("   > NodeRules deployed with NodeIngress.address = " + nodeIngress);
     let nodeRulesContract = await NodeRules.deployed();
 
-    await nodeIngressInstance.setContractAddress(rulesContractName, NodeRules.address);
-    console.log("   > Updated NodeIngress contract with NodeRules address = " + NodeRules.address);
-
     if(AllowlistUtils.isInitialAllowlistedNodesAvailable()) {
         console.log("   > Adding Initial Allowlisted eNodes ...");
         let allowlistedNodes = AllowlistUtils.getInitialAllowlistedNodes();
@@ -47,7 +44,7 @@ module.exports = async(deployer, network) => {
             let enode = allowlistedNodes[i];
             const { enodeHigh, enodeLow, nodeType, geoHash, name, organization } = AllowlistUtils.enodeToParams(enode);
             
-            await nodeRulesContract.addEnode(
+            await nodeRulesContract.addInitialNode(
                 enodeHigh,
                 enodeLow,
                 nodeType,
@@ -58,4 +55,8 @@ module.exports = async(deployer, network) => {
             console.log("     > eNode added: " + enode );
         }
     }
+    await nodeIngressInstance.setContractAddress(rulesContractName, NodeRules.address);
+    console.log("   > Updated NodeIngress contract with NodeRules address = " + NodeRules.address);
+
+    await nodeIngressInstance.triggerRulesChangeEvent(false);
 }
