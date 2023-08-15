@@ -44,7 +44,7 @@ module.exports = async(deployer, network) => {
             let enode = allowlistedNodes[i];
             const { enodeHigh, enodeLow, nodeType, geoHash, name, organization } = AllowlistUtils.enodeToParams(enode);
             
-            await nodeRulesContract.addInitialNode(
+            await nodeRulesContract.addNodeDuringDeploy(
                 enodeHigh,
                 enodeLow,
                 nodeType,
