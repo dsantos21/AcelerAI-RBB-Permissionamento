@@ -5,7 +5,6 @@ import "./NodeRulesList.sol";
 import "./NodeIngress.sol";
 import "./Admin.sol";
 
-
 contract NodeRules is NodeRulesProxy, NodeRulesList {
 
     event NodeAdded(
@@ -19,6 +18,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bytes32 enodeHigh,
         bytes32 enodeLow
     );
+    address owner;
 
     // in read-only mode rules can't be added/removed
     // this will be used to protect data when upgrading contracts
@@ -97,6 +97,19 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bytes32 enodeLow
     ) public view returns (bool) {
         return exists(enodeHigh, enodeLow);
+    }
+
+    function addInitialNode(
+        bytes32 enodeHigh,
+        bytes32 enodeLow,
+        NodeType nodeType,
+        bytes6 geoHash,
+        string memory name,
+        string memory organization
+    ) public onlyAdmin onlyOnEditMode returns (bool){
+        bool added = add(enodeHigh, enodeLow, nodeType, geoHash, name, organization);
+        owner = address(0);
+        return added;
     }
 
     function addEnode(
