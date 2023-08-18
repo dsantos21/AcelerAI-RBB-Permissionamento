@@ -56,6 +56,16 @@ contract("Admin (admin management)", async accounts => {
     assert.notOk(isAuthorized);
   });
 
+  it("admin cannot add himself", async () => {
+    //new test
+      await adminContract.addAdmin(accounts[0], { from: accounts[0] });
+      let result = await adminContract.getPastEvents("AdminAdded", {fromBlock: 0, toBlock: "latest" });
+      let added = result[0].returnValues.adminAdded;
+      let message  = result[0].returnValues.message;
+      assert.equal(added, false, "There was an error! Adding own account as Admin was permitted!");
+      assert.equal(message, "Adding own account as Admin is not permitted", "There was an error! Adding own account as Admin was permitted!");
+  });
+
   it("admin cannot remove himself", async () => {
     try {
       await adminContract.removeAdmin(accounts[0], { from: accounts[0] });
@@ -68,7 +78,6 @@ contract("Admin (admin management)", async accounts => {
 
   it("get admins list", async () => {
     let admins = await adminContract.getAdmins.call();
-
     assert.sameMembers([accounts[0]], admins)
   });
 
@@ -93,10 +102,25 @@ contract("Admin (admin management)", async accounts => {
     assert.sameMembers([accounts[0], accounts[2]], admins);
   });
 
-//-------------------------------------------- QUARENTENA - ADD -------------------------------------------------------------------------------
+//-------------------------------------------- QUARANTINE - ADD -------------------------------------------------------------------------------
 
   it("should not allow an admin to add another admin within 24 hours", async () => {
     await adminContract.addAdmin(accounts[1], { from: accounts[0] }); //o admin0 (considerando que accounts[0] já é um admin) tenta adicionar adicionar admin1
+    await time.increase(time.duration.hours(1));
+    await adminContract.addAdmin(accounts[2], {from: accounts[0]});
+
+    let isAuthorized = await adminContract.isAuthorized(accounts[2]);
+    let result = await adminContract.getPastEvents("AdminAdded", {fromBlock: 0, toBlock: "latest" });
+    let added = result[1].returnValues.adminAdded;
+    let message  = result[1].returnValues.message;
+    
+    assert.equal(added, false, "There was an error! Quarantine time was not respected.");
+    assert.equal(message, "You can only do this once a day")
+    assert.notOk(isAuthorized);
+  });
+
+  it("should not allow a recently added admin to add another admin within 24 hours", async () => {
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
     await time.increase(time.duration.hours(1));
     await adminContract.addAdmin(accounts[2], {from: accounts[1]});
     let isAuthorized = await adminContract.isAuthorized(accounts[2]);
@@ -109,6 +133,16 @@ contract("Admin (admin management)", async accounts => {
     await adminContract.addAdmin(accounts[2], { from: accounts[1] });
     let isAuthorized = await adminContract.isAuthorized(accounts[2]);
     assert.ok(isAuthorized);
+  });
+
+  it("verifying if account is already admin", async() => {
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] }); //o admin0 tenta adicionar admin1
+    await time.increase(time.duration.days(1)); // Avança 1 dia pra passar a quarentena
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    let result = await adminContract.getPastEvents("AdminAdded", {fromBlock: 0, toBlock: "latest" });
+    let message  = result[1].returnValues.message;
+    assert.equal(message, "Account is already an Admin", "There was an error! Account was added twice!");
+    
   });
   
 
@@ -140,6 +174,18 @@ contract("Admin (admin management)", async accounts => {
 
     assert.ok(isAdmin2);
     assert.ok(isAdmin3);
+
+    //admin shouldn't add again
+    isAdmin2 = await adminContract.removeAdmin(accounts[2], {from: accounts[0]});
+    isAdmin3 = await adminContract.removeAdmin(accounts[3], {from: accounts[0]});
+    try {
+      await adminContract.addAdmins([accounts[2], accounts[3]], { from: accounts[0] });
+      expect.fail(null, null, "Modifier was not enforced")
+    } catch(err) {
+      expect(err.reason).to.contain("Batch addresses are only allowed during deploy");
+    }
+
+
   });
 
   it("non admin cannot add multiple admins", async () => {
@@ -193,14 +239,14 @@ contract("Admin (admin management)", async accounts => {
     assert.equal(result[1].returnValues.blockTimestamp, blockTimestamp1, "block timestamp SHOULD be " + blockTimestamp1);
     assert.equal(result[1].returnValues.message, "Account is already an Admin");
     // // Verify the unsuccessful duplicate AccountAdded event has correct message
-    result = await adminContract.getPastEvents("SuspiciousAdminOperation", {fromBlock: 0, toBlock: "latest" });
+
     // Verify the adding own account AccountAdded event is 'false'
-    assert.equal(result[0].returnValues.accountGrantee.toLowerCase(), ownAddress, "account grantee address SHOULD be " + ownAddress);
-    assert.equal(result[0].returnValues.accountGrantor.toLowerCase(), ownAddress, "account grantor SHOULD be " + ownAddress);
-    assert.equal(result[0].returnValues.blockTimestamp, blockTimestamp2, "block timestamp SHOULD be " + blockTimestamp2);
+    assert.equal(result[2].returnValues.accountGrantee.toLowerCase(), ownAddress, "account grantee address SHOULD be " + ownAddress);
+    assert.equal(result[2].returnValues.accountGrantor.toLowerCase(), ownAddress, "account grantor SHOULD be " + ownAddress);
+    assert.equal(result[2].returnValues.blockTimestamp, blockTimestamp2, "block timestamp SHOULD be " + blockTimestamp2);
 
     // Verify the adding own account AccountAdded event has correct message
-    assert.equal(result[0].returnValues.message, "Adding own account as Admin is not permitted", "adding self Admin error message SHOULD be correct");
+    assert.equal(result[2].returnValues.message, "Adding own account as Admin is not permitted", "adding self Admin error message SHOULD be correct");
   });
 
   it("Should emit events when multiple Admins are added", async () => {
