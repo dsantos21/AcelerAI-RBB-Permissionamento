@@ -57,7 +57,7 @@ contract("Admin (admin management)", async accounts => {
   });
 
   it("admin cannot add himself", async () => {
-    //new test
+    //new test - done
       await adminContract.addAdmin(accounts[0], { from: accounts[0] });
       let result = await adminContract.getPastEvents("AdminAdded", {fromBlock: 0, toBlock: "latest" });
       let added = result[0].returnValues.adminAdded;
@@ -148,11 +148,38 @@ contract("Admin (admin management)", async accounts => {
 
 //-------------------------------------------- QUARENTENA - REMOVE -------------------------------------------------------------------------------
 
-  it("should not allow removing an admin after having removed another admin within 24 hours", async () => {
+  it("should not allow removing an admin after having added another admin within 24 hours", async () => {
+    await adminContract.addAdmin(accounts[2], { from: accounts[0] });
+    await time.increase(time.duration.days(1));
+
     await adminContract.addAdmin(accounts[1], { from: accounts[0] });
-    await adminContract.removeAdmin(accounts[1], { from: accounts[0] });
-    isAuthorized1 = await adminContract.isAuthorized(accounts[1]);
+    await time.increase(time.duration.hours(1));
+
+    await adminContract.removeAdmin(accounts[2], { from: accounts[0] });
+    let result = await adminContract.getPastEvents("AdminRemoved", {fromBlock: 0, toBlock: "latest" });
+    let removed  = result[0].returnValues.adminRemoved;
+    let isAuthorized1 = await adminContract.isAuthorized(accounts[2]);
+
+    assert.ok(removed == false);
     assert.ok(isAuthorized1);
+  });
+
+  it("Should not allow removing an admin after having removed another admin within 24 hours", async () => {
+    await adminContract.addAdmin(accounts[2], { from: accounts[0] });
+    await time.increase(time.duration.days(1));
+
+    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    await time.increase(time.duration.days(1));
+
+    await adminContract.removeAdmin(accounts[2], { from: accounts[0] });
+    await adminContract.removeAdmin(accounts[1], { from: accounts[0] });
+
+    let isAuthorized2 = await adminContract.isAuthorized(accounts[2]); //this should be false
+    let isAuthorized1 = await adminContract.isAuthorized(accounts[1]); //this should be true
+
+    assert.ok(isAuthorized1);
+    assert.ok(isAuthorized2 == false);
+
   });
 
   it("should allow removing an admin after having removed another admin after 24 hours", async () => {
