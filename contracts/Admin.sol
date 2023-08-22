@@ -49,9 +49,11 @@ contract Admin is AdminProxy, AdminList {
         else {
             bool result = add(_address);
             string memory message = result ? "Admin account added successfully" : "Account is already an Admin";
-            emit AdminAdded(result, _address, msg.sender, block.timestamp, message);
-            lastCallTimestamp[msg.sender] = block.timestamp;
-            lastCallTimestamp[_address] = block.timestamp;
+            emit AdminAdded(result, _address, msg.sender, block.timestamp, message);    
+            if (result == true){
+                lastCallTimestamp[msg.sender] = block.timestamp;
+                lastCallTimestamp[_address] = block.timestamp;
+            }
             return result;
         }
     }
