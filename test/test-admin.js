@@ -140,32 +140,46 @@ contract("Admin (admin management)", async accounts => {
 
     assert.equal(added1, true, "There was an error! First admin was not added!");
     assert.equal(message1, "Admin account added successfully", "There was an error! The first message is not the expected");
+    assert.notOk(isAuthorized);
     assert.equal(added2, false, "There was an error! Second admin was added!");
     assert.equal(message2, "You can only do this once a day", "There was an error! Quarantine time was not respected");
-    assert.notOk(isAuthorized);
+
   });
 
   it("should allow an admin to add another admin after 24 hours", async () => {
-    /*  a alteração no estado da blockchain foi ok (que foi a única coisa testada com o isAuthorized) e os eventos que foram emitidos
-    é necessário testar se o retorno da função foi condizente (no caso, o que foi retornado no return),
-    se*/
-    await adminContract.addAdmin(accounts[1], { from: accounts[0] }); //o admin0 tenta adicionar admin1
+    /*  guess its ok*/
+    let returned1 = await adminContract.addAdmin(accounts[1], { from: accounts[0] }); //o admin0 tenta adicionar admin1
     await time.increase(time.duration.days(1)); // Avança 1 dia pra passar a quarentena
-    await adminContract.addAdmin(accounts[2], { from: accounts[1] });
+    let returned2 = await adminContract.addAdmin(accounts[2], { from: accounts[1] });
+
     let isAuthorized = await adminContract.isAuthorized(accounts[2]);
+    let logs1 = returned1.logs[0].args;
+    let added1 = logs1.adminAdded;
+    let message1 = logs1.message;
+
+    let logs2 = returned2.logs[0].args;
+    let added2 = logs2.adminAdded;
+    let message2 = logs2.message;
+
+    assert.equal(added1, true, "There was an error! First admin was not added!");
+    assert.equal(message1, "Admin account added successfully", "There was an error! The first message is not the expected");
     assert.ok(isAuthorized);
+    assert.equal(added2, true, "There was an error! Second admin was not added!");
+    assert.equal(message2, "Admin account added successfully", "There was an error! The second message is not the expected");
+
+
   });
 
   it("verifying if account is already admin", async() => {
-    /* é necessário testar se o retorno da função foi condizente (no caso, o que foi retornado no return),
-    se a alteração no estado da blockchain foi ok (que foi a única coisa testada com o isAuthorized) e os eventos que foram emitidos
-    */
+    /* guess its ok */
     await adminContract.addAdmin(accounts[1], { from: accounts[0] }); //o admin0 tenta adicionar admin1
     await time.increase(time.duration.days(1)); // Avança 1 dia pra passar a quarentena
-    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
-    let result = await adminContract.getPastEvents("AdminAdded", {fromBlock: 0, toBlock: "latest" });
-    let message  = result[1].returnValues.message;
-    assert.equal(message, "Account is already an Admin", "There was an error! Account was added twice!");
+    let result = await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    let logs = result.logs[0].args;
+    let added = logs.adminAdded;
+    let message = logs.message;
+    assert.equal(added, false, "There was an error! Account have been added! ")
+    assert.equal(message, "Account is already an Admin", "There was an error! The error message is not the expected.");
 
   });
 
