@@ -8,6 +8,7 @@ contract Admin is AdminProxy, AdminList {
 
     mapping(address => uint256) private lastCallTimestamp;
     address owner;
+    address public SuperUser;
 
     modifier onlyAdmin() {
         require(isAuthorized(msg.sender), "Sender not authorized");
@@ -19,9 +20,36 @@ contract Admin is AdminProxy, AdminList {
         _;
     }
 
+     modifier onlySuperUser() { 
+        require(msg.sender == SuperUser, "Only super user can perform this action");
+        _;
+    }
+
+    struct Vote {
+        mapping(address => bool) voters;
+        uint256 count;
+        uint256 lastVoteTimestamp;
+    }
+    
+    mapping(address => Vote) public votes;
+
     constructor() public {
         add(msg.sender);
         owner = msg.sender;
+        makeSuperUser(msg.sender);
+    }
+
+    function isSuperUser (address _address) public view returns (bool) { 
+        return _address == SuperUser;
+    }
+
+    function removeSuperUserSelf() public {
+        require(isSuperUser(msg.sender), "Not permitted");
+        SuperUser = address(0);
+    }
+
+    function removeSuperUser() private{
+        SuperUser = address(0);
     }
 
     function getAdminSize() public view returns (uint256) {
@@ -31,6 +59,41 @@ contract Admin is AdminProxy, AdminList {
 
     function isAuthorized(address _address) public view returns (bool) {
         return exists(_address);
+    }
+
+    function makeSuperUser(address superToBe) private{
+        SuperUser = superToBe;
+    }
+
+    function voteForSuperUser(address superToBe) public onlyAdmin returns (bool){
+        require(superToBe != address(0), "Address must not be zero.");
+        require(!votes[superToBe].voters[msg.sender], "Already voted for this proposal");
+        
+        if (block.timestamp > votes[superToBe].lastVoteTimestamp + 7 days){
+            delete votes[superToBe];
+            votes[superToBe].voters[msg.sender] = true;
+            votes[superToBe].count++;
+            votes[superToBe].lastVoteTimestamp = block.timestamp;
+        }
+
+        if (votes[superToBe].count >= 3){
+            makeSuperUser(superToBe);
+            votes[superToBe].count = 0;
+        }
+
+    }
+
+    function voteToRemove(address notSuperAnymore) public onlyAdmin returns (bool){
+        require(notSuperAnymore == SuperUser, "This address is not a super user.");
+        require(!votes[notSuperAnymore].voters[msg.sender], "Already voted for this proposal");
+
+        if (votes[notSuperAnymore].count >= 3){
+            SuperUser = address(0);
+            votes[notSuperAnymore].count = 0;
+        } else {
+            votes[notSuperAnymore].count++;
+        }
+
     }
 
     function addAdmin(address _address) public onlyAdmin returns (bool) {
