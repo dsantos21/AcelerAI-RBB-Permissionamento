@@ -106,25 +106,24 @@ contract("Admin (admin management)", async accounts => {
 
 //-------------------------------------------- QUARANTINE - ADD -------------------------------------------------------------------------------
 
-  it("should not allow an admin to add another admin within 24 hours", async () => {
-    /* guess it's ok
-    */
+  it("Should not allow an admin to add another admin within 24 hours", async () => {
     await adminContract.addAdmin(accounts[1], { from: accounts[0] });
     await time.increase(time.duration.hours(1));
     let returned = await adminContract.addAdmin(accounts[2], {from: accounts[0]});
 
     let logs = returned.logs[0].args;
+    let grantee = logs.accountGrantee;
+    let grantor = logs.accountGrantor;
     let added = logs.adminAdded;
-    let message = logs.message;
 
     let isAuthorized = await adminContract.isAuthorized(accounts[2]);
     assert.equal(added, false, "There was an error! Account 2 was added");
     assert.equal(isAuthorized, false, "There was an error! Account 2 is authorized");
-    assert.equal(message, "You can only do this once a day", "There was an error! Quarantine time was not respected");
+    assert.equal(grantor, accounts[0], "There was an error! Account 0 is not the grantor!");
+    assert.equal(grantee, accounts[2], "There was an error! Account 2 is not the grantee!");
   });
 
-  it("should not allow a recently added admin to add another admin within 24 hours", async () => {
-    /* guess its ok */
+  it("Should not allow a recently added admin to add another admin within 24 hours", async () => {
     let returned1 = await adminContract.addAdmin(accounts[1], { from: accounts[0] });
     await time.increase(time.duration.hours(1));
     let returned2 = await adminContract.addAdmin(accounts[2], {from: accounts[1]});
@@ -132,22 +131,25 @@ contract("Admin (admin management)", async accounts => {
     let isAuthorized = await adminContract.isAuthorized(accounts[2]);
     let logs1 = returned1.logs[0].args;
     let added1 = logs1.adminAdded;
-    let message1 = logs1.message;
+    let grantee1 = logs1.accountGrantee;
+    let grantor1 = logs1.accountGrantor;
 
     let logs2 = returned2.logs[0].args;
     let added2 = logs2.adminAdded;
-    let message2 = logs2.message;
+    let grantee2 = logs2.accountGrantee;
+    let grantor2 = logs2.accountGrantor;
 
     assert.equal(added1, true, "There was an error! First admin was not added!");
-    assert.equal(message1, "Admin account added successfully", "There was an error! The first message is not the expected");
+    assert.equal(grantee1, accounts[1], "There was an error! Account 1 is not the grantee!");
+    assert.equal(grantor1, accounts[0], "There was an error! Account 0 is not the grantor!");
+
     assert.notOk(isAuthorized);
     assert.equal(added2, false, "There was an error! Second admin was added!");
-    assert.equal(message2, "You can only do this once a day", "There was an error! Quarantine time was not respected");
-
+    assert.equal(grantee2, accounts[2], "There was an error! Account 2 is not the grantee!");
+    assert.equal(grantor2, accounts[1], "There was an error! Account 1 is not the grantor!");
   });
 
-  it("should allow an admin to add another admin after 24 hours", async () => {
-    /*  guess its ok*/
+  it("Should allow a recently added admin to add another admin after 24 hours", async () => {
     let returned1 = await adminContract.addAdmin(accounts[1], { from: accounts[0] }); //o admin0 tenta adicionar admin1
     await time.increase(time.duration.days(1)); // Avança 1 dia pra passar a quarentena
     let returned2 = await adminContract.addAdmin(accounts[2], { from: accounts[1] });
@@ -155,88 +157,154 @@ contract("Admin (admin management)", async accounts => {
     let isAuthorized = await adminContract.isAuthorized(accounts[2]);
     let logs1 = returned1.logs[0].args;
     let added1 = logs1.adminAdded;
-    let message1 = logs1.message;
+    let grantee1 = logs1.accountGrantee;
+    let grantor1 = logs1.accountGrantor;
 
     let logs2 = returned2.logs[0].args;
     let added2 = logs2.adminAdded;
-    let message2 = logs2.message;
+    let grantee2 = logs2.accountGrantee;
+    let grantor2 = logs2.accountGrantor;
 
     assert.equal(added1, true, "There was an error! First admin was not added!");
-    assert.equal(message1, "Admin account added successfully", "There was an error! The first message is not the expected");
+    assert.equal(grantee1, accounts[1], "There was an error! Account 1 is not the grantee!");
+    assert.equal(grantor1, accounts[0], "There was an error! Account 0 is not the grantor!");
     assert.ok(isAuthorized);
     assert.equal(added2, true, "There was an error! Second admin was not added!");
-    assert.equal(message2, "Admin account added successfully", "There was an error! The second message is not the expected");
-
-
+    assert.equal(grantee2, accounts[2], "There was an error! Account 2 is not the grantee!");
+    assert.equal(grantor2, accounts[1], "There was an error! Account 1 is not the grantor!");
   });
 
-  it("verifying if account is already admin", async() => {
-    /* guess its ok */
+  it("Should verify if account is already admin", async() => {
     await adminContract.addAdmin(accounts[1], { from: accounts[0] }); //o admin0 tenta adicionar admin1
     await time.increase(time.duration.days(1)); // Avança 1 dia pra passar a quarentena
     let result = await adminContract.addAdmin(accounts[1], { from: accounts[0] });
     let logs = result.logs[0].args;
     let added = logs.adminAdded;
-    let message = logs.message;
-    assert.equal(added, false, "There was an error! Account have been added! ")
-    assert.equal(message, "Account is already an Admin", "There was an error! The error message is not the expected.");
+    let grantee = logs.accountGrantee;
+    let grantor = logs.accountGrantor;
+    assert.equal(added, false, "There was an error! Account was added! ")
+    assert.equal(grantee, accounts[1], "There was an error! Account 1 is not the grantee!");
+    assert.equal(grantor, accounts[0], "There was an error! Account 0 is not the grantor!");
 
   });
 
 
 //-------------------------------------------- QUARENTENA - REMOVE -------------------------------------------------------------------------------
 
-  it("should not allow removing an admin after having added another admin within 24 hours", async () => {
-    /* é necessário testar se o retorno da função foi condizente (no caso, o que foi retornado no return),
-    se a alteração no estado da blockchain foi ok (que foi a única coisa testada com o isAuthorized) e os eventos que foram emitidos
-    */
-    await adminContract.addAdmin(accounts[2], { from: accounts[0] });
+  it("Should not allow removing an admin after having added another admin within 24 hours", async () => {
+    let result1 = await adminContract.addAdmin(accounts[2], { from: accounts[0] });
     await time.increase(time.duration.days(1));
-
-    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
-    await time.increase(time.duration.hours(1));
-
-    await adminContract.removeAdmin(accounts[2], { from: accounts[0] });
-    let result = await adminContract.getPastEvents("AdminRemoved", {fromBlock: 0, toBlock: "latest" });
-    let removed  = result[0].returnValues.adminRemoved;
+    
+    let logs1 = result1.logs[0].args;
+    let added1 = logs1.adminAdded;
+    let grantee1 = logs1.accountGrantee;
+    let grantor1 = logs1.accountGrantor;
     let isAuthorized1 = await adminContract.isAuthorized(accounts[2]);
 
-    assert.ok(removed == false);
+    assert.equal(added1, true,"There was an error! Account was not added!");
+    assert.equal(grantee1, accounts[2], "There was an error! Account 2 is not the grantee!");
+    assert.equal(grantor1, accounts[0], "There was an error! Account 0 is not the grantor!");
     assert.ok(isAuthorized1);
+
+    let result2 = await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    await time.increase(time.duration.hours(1));
+
+    let logs2 = result2.logs[0].args;
+    let added2 = logs2.adminAdded;
+    let grantee2 = logs2.accountGrantee;
+    let grantor2 = logs2.accountGrantor;
+    let isAuthorized2 = await adminContract.isAuthorized(accounts[1]);
+
+    assert.equal(added2, true, "There was an error! Account was not added!");
+    assert.equal(grantee2, accounts[1], "There was an error! Account 1 is not the grantee!");
+    assert.equal(grantor2, accounts[0], "There was an error! Account 0 is not the grantor!");
+    assert.ok(isAuthorized2);
+
+    let result3 = await adminContract.removeAdmin(accounts[2], { from: accounts[0] });
+
+    let logs3 = result3.logs[0].args;
+    let removed = logs3.adminRemoved;
+    let grantee3 = logs3.accountGrantee;
+    let grantor3 = logs3.accountGrantor;
+    let isAuthorized3 = await adminContract.isAuthorized(accounts[2]);
+
+    assert.equal(removed, false, "There was an error! Account was removed!");
+    assert.equal(grantee3, accounts[2], "There was an error! Account 2 is not the grantee!");
+    assert.equal(grantor3, accounts[0], "There was an error! Account 0 is not the grantor!");
+    assert.ok(isAuthorized2);
   });
 
   it("Should not allow removing an admin after having removed another admin within 24 hours", async () => {
-    /* é necessário testar se o retorno da função foi condizente (no caso, o que foi retornado no return),
-    se a alteração no estado da blockchain foi ok (que foi a única coisa testada com o isAuthorized) e os eventos que foram emitidos
-    */
-    await adminContract.addAdmin(accounts[2], { from: accounts[0] });
+    let result1 = await adminContract.addAdmin(accounts[2], { from: accounts[0] });
     await time.increase(time.duration.days(1));
 
-    await adminContract.addAdmin(accounts[1], { from: accounts[0] });
+    let result2 = await adminContract.addAdmin(accounts[1], { from: accounts[0] });
     await time.increase(time.duration.days(1));
 
-    await adminContract.removeAdmin(accounts[2], { from: accounts[0] });
-    await adminContract.removeAdmin(accounts[1], { from: accounts[0] });
+    let result3 = await adminContract.removeAdmin(accounts[2], { from: accounts[0] });
+    let result4 = await adminContract.removeAdmin(accounts[1], { from: accounts[0] });
 
     let isAuthorized2 = await adminContract.isAuthorized(accounts[2]); //this should be false
     let isAuthorized1 = await adminContract.isAuthorized(accounts[1]); //this should be true
 
     assert.ok(isAuthorized1);
-    assert.ok(isAuthorized2 == false);
+    assert.notOk(isAuthorized2);
+
+    let logs1 = result1.logs[0].args;
+    let added1 = logs1.adminAdded;
+    let grantee1 = logs1.accountGrantee;
+    let grantor1 = logs1.accountGrantor;
+
+    assert.equal(added1, true,"There was an error! Account was not added!");
+    assert.equal(grantee1, accounts[2], "There was an error! Account 2 is not the grantee!");
+    assert.equal(grantor1, accounts[0], "There was an error! Account 0 is not the grantor!");
+
+    let logs2 = result2.logs[0].args;
+    let added2 = logs2.adminAdded;
+    let grantee2 = logs2.accountGrantee;
+    let grantor2 = logs2.accountGrantor;
+
+    assert.equal(added2, true, "There was an error! Account was not added!");
+    assert.equal(grantee2, accounts[1], "There was an error! Account 1 is not the grantee!");
+    assert.equal(grantor2, accounts[0], "There was an error! Account 0 is not the grantor!");
+
+    let logs3 = result3.logs[0].args;
+    let removed3 = logs3.adminRemoved;
+    let grantee3 = logs3.accountGrantee;
+    let grantor3 = logs3.accountGrantor;
+
+    assert.equal(removed3, true, "There was an error! Account was not removed!");
+    assert.equal(grantee3, accounts[2], "There was an error! Account 2 is not the grantee!");
+    assert.equal(grantor3, accounts[0], "There was an error! Account 0 is not the grantor!");
+
+    let logs4 = result4.logs[0].args;
+    let removed4 = logs4.adminRemoved;
+    let grantee4 = logs4.accountGrantee;
+    let grantor4 = logs4.accountGrantor;
+
+    assert.equal(removed4, false, "There was an error! Account was removed!");
+    assert.equal(grantee4, accounts[1], "There was an error! Account 1 is not the grantee!");
+    assert.equal(grantor4, accounts[0], "There was an error! Account 0 is not the grantor!");
 
   });
 
-  it("should allow removing an admin after having removed another admin after 24 hours", async () => {
-    /* é necessário testar se o retorno da função foi condizente (no caso, o que foi retornado no return),
-    se a alteração no estado da blockchain foi ok (que foi a única coisa testada com o isAuthorized) e os eventos que foram emitidos
-    */
+  it("Should allow removing an admin after having removed another admin after 24 hours", async () => {
     await adminContract.addAdmin(accounts[1], { from: accounts[0] });
     await time.increase(time.duration.days(1));
     await adminContract.addAdmin(accounts[2], { from: accounts[1] });
     await time.increase(time.duration.days(1));
-    await adminContract.removeAdmin(accounts[2], { from: accounts[0] });
+    let returned = await adminContract.removeAdmin(accounts[2], { from: accounts[0] });
+
+    let logs = returned.logs[0].args;
+    let grantee = logs.accountGrantee;
+    let grantor = logs.accountGrantor;
+    let removed = logs.adminRemoved;
+
     isAuthorized2 = await adminContract.isAuthorized(accounts[2]);
     assert.notOk(isAuthorized2);
+    assert.equal(grantee, accounts[2],"There was an error! Account 2 is not the grantee!");
+    assert.equal(grantor, accounts[0], "There was an error! Account 0 is not the grantor!");
+    assert.equal(removed, true,  "There was an error! Account was not removed!");
   });
 
 //----------------------------------------------------------------- ACABAM AQUI OS TESTES NOVOS --------------------------------------------------------
