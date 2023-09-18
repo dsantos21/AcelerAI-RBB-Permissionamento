@@ -1,0 +1,41 @@
+name: Compile and Release
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  compile: 
+    runs-on: ubuntu-latest
+
+    steps:      
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js and Yarn
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: yarn install
+
+      - name: Compile Contracts (Assumindo que a compilação cria a pasta 'src')
+        run: yarn truffle compile --out-dir  'src/chain/abis/*.json'
+
+      - name: Create Linux Tarball
+        run: tar -zcvf src.tar.gz -C src .
+
+      - name: Create Windows Zip
+        run: zip -r src.zip src/*
+     
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            src.tar.gz
+            src.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
