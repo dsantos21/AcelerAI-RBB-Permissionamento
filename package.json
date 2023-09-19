@@ -72,7 +72,6 @@
     "@ethersproject/abi": "^5.0.0",
     "@ethersproject/providers": "^5.0.0",
     "prop-types": "^15.7.2",
-    "axios": "^v0.21.1",
     "adm-zip": "^0.4.13"
   },
   "devDependencies": {
