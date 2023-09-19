@@ -19,7 +19,8 @@
     "build:contracts": "yarn truffle compile && yarn typechain --target ethers-v5 --out-dir ./src/chain/@types 'src/chain/abis/*.json'",
     "build": "yarn run build:contracts && yarn run build:app",
     "start": "sh scripts/wrap_env.sh 'yarn react-scripts start'",
-    "eject": "yarn react-scripts eject"
+    "eject": "yarn react-scripts eject",
+    "downloadabi": "curl -#LO https://github.com/RBBNet/Permissionamento/releases/download/v1.0.1%2BABIs/src.zip && node -e \"const fs = require('fs'); const AdmZip = require('adm-zip'); const outputPath = './src.zip'; console.log('Iniciando a descompactação do arquivo.'); const zip = new AdmZip(outputPath); zip.extractAllTo('./', true); console.log('Arquivo descompactado com sucesso.'); fs.unlinkSync(outputPath); console.log('Arquivo ZIP excluído com sucesso.');\""
   },
   "eslintConfig": {
     "extends": [
@@ -67,7 +68,12 @@
     "typescript": "^4.3.0",
     "utf8": "^3.0.0",
     "web3": "1.2.5",
-    "web3-utils": "^1.10.0"
+    "web3-utils": "^1.10.0",
+    "@ethersproject/abi": "^5.0.0",
+    "@ethersproject/providers": "^5.0.0",
+    "prop-types": "^15.7.2",
+    "axios": "^v0.21.1",
+    "adm-zip": "^0.4.13"
   },
   "devDependencies": {
     "enzyme": "^3.9.0",
@@ -86,7 +92,10 @@
     "truffle": "5.0.17",
     "truffle-typings": "^1.0.8",
     "ts-jest": "^24.0.2",
-    "typechain": "^8.2.0"
+    "typechain": "^8.2.0",
+    "eslint": ">=5.0.0",
+    "mocha": ">=2.2.5",
+    "jest": ">=24 <25"
   },
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx,json,css}": [
