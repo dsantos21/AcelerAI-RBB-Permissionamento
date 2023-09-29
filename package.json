@@ -3,6 +3,7 @@
   "repository": "permissioning-smart-contracts",
   "license": "Apache-2.0",
   "private": true,
+  "abirelease": "v1.0.1+ABIs",
   "scripts": {
     "lint:contracts": "yarn solium -d contracts",
     "lint:app": "yarn prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css}\"",
@@ -20,7 +21,8 @@
     "build": "yarn run build:contracts && yarn run build:app",
     "start": "sh scripts/wrap_env.sh 'yarn react-scripts start'",
     "eject": "yarn react-scripts eject",
-    "downloadabi": "curl -#LO https://github.com/RBBNet/Permissionamento/releases/download/v1.0.1%2BABIs/src.zip && node -e \"const fs = require('fs'); const AdmZip = require('adm-zip'); const outputPath = './src.zip'; console.log('Iniciando a descompactação do arquivo.'); const zip = new AdmZip(outputPath); zip.extractAllTo('./', true); console.log('Arquivo descompactado com sucesso.'); fs.unlinkSync(outputPath); console.log('Arquivo ZIP excluído com sucesso.');\""
+    "getabi": "yarn --silent postinstall",
+    "postinstall": "((w>/dev/null && curl -#LO https://github.com/RBBNet/Permissionamento/releases/download/$npm_package_abirelease/src.zip) || (ver && curl -#LO https://github.com/RBBNet/Permissionamento/releases/download/%npm_package_abirelease%/src.zip)) && node -e \"const fs = require('fs'); const AdmZip = require('adm-zip'); const outputPath = './src.zip'; console.log('Iniciando a descompactação do arquivo.'); const zip = new AdmZip(outputPath); zip.extractAllTo('./', true); console.log('Arquivo descompactado com sucesso.'); fs.unlinkSync(outputPath); console.log('Arquivo ZIP excluído com sucesso.'); console.log('\\nDownload das ABIs concluído.');\""
   },
   "eslintConfig": {
     "extends": [
