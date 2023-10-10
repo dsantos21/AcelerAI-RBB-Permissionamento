@@ -1,4 +1,5 @@
-pragma solidity 0.5.9;
+pragma solidity 0.8.0;
+// SPDX-License-Identifier: UNLICENSED
 
 interface NodeRulesProxy {
     function connectionAllowed(

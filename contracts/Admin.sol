@@ -1,4 +1,5 @@
-pragma solidity 0.5.9;
+pragma solidity 0.8.0;
+// SPDX-License-Identifier: UNLICENSED
 
 import "./AdminProxy.sol";
 import "./AdminList.sol";
@@ -15,11 +16,11 @@ contract Admin is AdminProxy, AdminList {
         _;
     }
 
-    constructor() public {
+    constructor() {
         add(msg.sender);
     }
 
-    function isAuthorized(address _address) public view returns (bool) {
+    function isAuthorized(address _address) override public view returns (bool) {
         return exists(_address);
     }
 

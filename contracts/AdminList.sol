@@ -1,4 +1,5 @@
-pragma solidity 0.5.9;
+pragma solidity 0.8.0;
+// SPDX-License-Identifier: UNLICENSED
 
 
 contract AdminList {
@@ -30,11 +31,13 @@ contract AdminList {
 
     function add(address _account) internal returns (bool) {
         if (indexOf[_account] == 0) {
-            indexOf[_account] = allowlist.push(_account);
+            indexOf[_account] = allowlist.length + 1; // 1-based indexing
+            allowlist.push(_account);
             return true;
         }
         return false;
     }
+
 
     function addAll(address[] memory accounts, address _grantor) internal returns (bool) {
         bool allAdded = true;
@@ -67,7 +70,7 @@ contract AdminList {
             }
 
             //shrink array
-            allowlist.length -= 1;
+            allowlist.pop();
             indexOf[_account] = 0;
             return true;
         }

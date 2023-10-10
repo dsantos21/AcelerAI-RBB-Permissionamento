@@ -1,4 +1,5 @@
-pragma solidity 0.5.9;
+pragma solidity 0.8.0;
+// SPDX-License-Identifier: UNLICENSED
 
 import "./NodeRulesProxy.sol";
 import "./NodeRulesList.sol";
@@ -46,7 +47,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         _;
     }
 
-    constructor (NodeIngress _nodeIngressAddress) public {
+    constructor (NodeIngress _nodeIngressAddress) {
         nodeIngressContract = _nodeIngressAddress;
         owner = msg.sender;
     }
@@ -82,7 +83,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bytes32 destinationEnodeLow,
         bytes16,
         uint16
-    ) public view returns (bytes32) {
+    )override public view returns (bytes32) {
         if (
             enodePermitted (
                 sourceEnodeHigh,

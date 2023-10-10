@@ -1,4 +1,5 @@
-pragma solidity 0.5.9;
+pragma solidity 0.8.0;
+// SPDX-License-Identifier: UNLICENSED
 
 contract NodeRulesList {
 
@@ -39,7 +40,9 @@ contract NodeRulesList {
     function add(bytes32 _enodeHigh, bytes32 _enodeLow, NodeType _nodeType, bytes6 _geoHash, string memory _name, string memory _organization) internal returns (bool) {
         uint256 key = calculateKey(_enodeHigh, _enodeLow);
         if (indexOf[key] == 0) {
-            indexOf[key] = allowlist.push(enode(_enodeHigh, _enodeLow, _nodeType, _geoHash, _name, _organization));
+            enode memory newEnode = enode(_enodeHigh, _enodeLow, _nodeType, _geoHash, _name, _organization);
+            allowlist.push(newEnode);
+            indexOf[key] = allowlist.length;
             return true;
         }
         return false;
@@ -49,16 +52,14 @@ contract NodeRulesList {
         uint256 key = calculateKey(_enodeHigh, _enodeLow);
         uint256 index = indexOf[key];
 
-        if (index > 0 && index <= allowlist.length) { //1 based indexing
-            //move last item into index being vacated (unless we are dealing with last index)
+        if (index > 0 && index <= allowlist.length) {
             if (index != allowlist.length) {
                 enode memory lastEnode = allowlist[allowlist.length - 1];
                 allowlist[index - 1] = lastEnode;
                 indexOf[calculateKey(lastEnode.enodeHigh, lastEnode.enodeLow)] = index;
             }
 
-            //shrink array
-            allowlist.length -= 1;
+            allowlist.pop();
             indexOf[key] = 0;
             return true;
         }

@@ -1,4 +1,5 @@
-pragma solidity 0.5.9;
+pragma solidity 0.8.0;
+// SPDX-License-Identifier: UNLICENSED
 
 import "./AccountRulesProxy.sol";
 import "./AccountRulesList.sol";
@@ -29,7 +30,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         _;
     }
 
-    constructor (AccountIngress _ingressContract) public {
+    constructor (AccountIngress _ingressContract) {
         ingressContract = _ingressContract;
         add(msg.sender);
     }
@@ -63,7 +64,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         uint256, // gasPrice
         uint256, // gasLimit
         bytes memory // payload
-    ) public view returns (bool) {
+    ) override public view returns (bool) {
         if (
             accountPermitted (sender)
         ) {

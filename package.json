@@ -8,8 +8,8 @@
   },
   "scripts": {
     "test": "yarn truffle test",
-    "windowscompiler": "if exist \"C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js\" (cls && @echo compilador 0.5.9 já existente) else (powershell -c \"if (!(Test-Path 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js')) { New-Item -ItemType Directory -Force -Path 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\'; Import-Module BitsTransfer; Start-BitsTransfer 'https://github.com/RBBNet/start-network/releases/download/0.1/solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js' 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js' -UseStoredCredential proxy }\" && cls && @echo Compilador 0.5.9 instalado com sucesso! )",
-    "linuxcompiler": "[ -f ~/.config/truffle-nodejs/compilers/node_modules/solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js ] && ( echo \"O compilador 0.5.9 já existe localmente.\" ) || ( cd ~/.config/truffle-nodejs/compilers/node_modules/ && curl -LO https://github.com/RBBNet/start-network/releases/download/0.1/solc-emscripten-wasm32-v0.5.9+commit.e560f70d.js  && echo \"Compilador 0.5.9 instalado com sucesso!\" )"
+    "windowscompiler": "if exist \"C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.8.0+commit.e560f70d.js\" (cls && @echo compilador 0.8.0 já existente) else (powershell -c \"if (!(Test-Path 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.8.0+commit.e560f70d.js')) { New-Item -ItemType Directory -Force -Path 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\'; Import-Module BitsTransfer; Start-BitsTransfer 'https://github.com/ethereum/solidity/releases/download/v0.8.0/soljson.js' 'C:\\Users\\%username%\\appdata\\Roaming\\truffle-nodejs\\Config\\compilers\\node_modules\\solc-emscripten-wasm32-v0.8.0+commit.e560f70d.js' -UseStoredCredential proxy }\" && cls && @echo Compilador 0.8.0 instalado com sucesso! )",
+    "linuxcompiler": "[ -f ~/.config/truffle-nodejs/compilers/node_modules/solc-emscripten-wasm32-v0.8.0+commit.e560f70d.js ] && ( echo \"O compilador 0.8.0 já existe localmente.\" ) || ( cd ~/.config/truffle-nodejs/compilers/node_modules/ && curl -L https://github.com/ethereum/solidity/releases/download/v0.8.0/soljson.js -o solc-emscripten-wasm32-v0.8.0+commit.e560f70d.js  && echo \"Compilador 0.8.0 instalado com sucesso!\" )"
   },
   "dependencies": {
     "babel-runtime": "^6.26.0",
@@ -18,7 +18,7 @@
     "web3-utils": "^1.5.3"
   },
   "devDependencies": {
-    "truffle": "5.11.1"
+    "truffle": "^5.11.5"
   },
   "repository": {
     "type": "git",

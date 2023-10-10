@@ -1,7 +1,7 @@
-pragma solidity 0.5.9;
+pragma solidity 0.8.0;
+// SPDX-License-Identifier: UNLICENSED
 
 import "./AdminProxy.sol";
-
 
 contract Ingress {
     // Contract keys
@@ -42,7 +42,8 @@ contract Ingress {
         require(isAuthorized(msg.sender), "Not authorized to update contract registry.");
 
         if (indexOf[name] == 0) {
-            indexOf[name] = contractKeys.push(name);
+            indexOf[name] = contractKeys.length + 1;
+            contractKeys.push(name);
         }
 
         registry[name] = addr;
