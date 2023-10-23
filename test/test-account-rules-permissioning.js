@@ -68,6 +68,14 @@ contract("Account Rules (Permissioning)", (accounts) => {
     assert.ok(permitted, 'expected account 3 added to be in allowlist');
   });
 
+  it('should not add two accounts with the same address', async() => {
+    await rulesContract.addAccount(address1);
+
+    let result = await rulesContract.addAccount(address1);
+    result = result.logs[0].args.accountAdded;
+    assert.notOk(result, 'expected account addition to be false.');
+  });
+
   it("getByIndex returns expected order", async () => {
     let result = await rulesContract.getByIndex(0);
     assert.equal(result.toLowerCase(), address1.toLowerCase());
