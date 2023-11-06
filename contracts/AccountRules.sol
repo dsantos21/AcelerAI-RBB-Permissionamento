@@ -1,21 +1,20 @@
-pragma solidity 0.8.0;
 // SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.6.0;
 
 import "./AccountRulesProxy.sol";
 import "./AccountRulesList.sol";
 import "./AccountIngress.sol";
 import "./Admin.sol";
 
-
 contract AccountRules is AccountRulesProxy, AccountRulesList {
 
-    // in read-only mode rules can't be added/removed
-    // this will be used to protect data when upgrading contracts
     bool private readOnlyMode = false;
-    // version of this contract: semver like 1.2.14 represented like 001002014
     uint private version = 1000000;
 
     AccountIngress private ingressContract;
+
+    event AccountAdded(bool added, address account, address sender, uint256 timestamp);
+    event AccountRemoved(bool removed, address account, address sender, uint256 timestamp);
 
     modifier onlyOnEditMode() {
         require(!readOnlyMode, "In read only mode: rules cannot be modified");
@@ -30,29 +29,27 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         _;
     }
 
-    constructor (AccountIngress _ingressContract) {
+    constructor(AccountIngress _ingressContract) public {
         ingressContract = _ingressContract;
         add(msg.sender);
     }
 
-    // VERSION
     function getContractVersion() public view returns (uint) {
         return version;
     }
 
-    // READ ONLY MODE
     function isReadOnly() public view returns (bool) {
         return readOnlyMode;
     }
 
     function enterReadOnly() public onlyAdmin returns (bool) {
-        require(readOnlyMode == false, "Already in read only mode");
+        require(!readOnlyMode, "Already in read only mode");
         readOnlyMode = true;
         return true;
     }
 
     function exitReadOnly() public onlyAdmin returns (bool) {
-        require(readOnlyMode == true, "Not in read only mode");
+        require(readOnlyMode, "Not in read only mode");
         readOnlyMode = false;
         return true;
     }
@@ -64,33 +61,21 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         uint256, // gasPrice
         uint256, // gasLimit
         bytes memory // payload
-    ) override public view returns (bool) {
-        if (
-            accountPermitted (sender)
-        ) {
-            return true;
-        } else {
-            return false;
-        }
+    ) public override view returns (bool) {
+        return accountPermitted(sender);
     }
 
-    function accountPermitted(
-        address _account
-    ) public view returns (bool) {
+    function accountPermitted(address _account) public view returns (bool) {
         return exists(_account);
     }
 
-    function addAccount(
-        address account
-    ) public onlyAdmin onlyOnEditMode returns (bool) {
+    function addAccount(address account) public onlyAdmin onlyOnEditMode returns (bool) {
         bool added = add(account);
         emit AccountAdded(added, account, msg.sender, block.timestamp);
         return added;
     }
 
-    function removeAccount(
-        address account
-    ) public onlyAdmin onlyOnEditMode returns (bool) {
+    function removeAccount(address account) public onlyAdmin onlyOnEditMode returns (bool) {
         bool removed = remove(account);
         emit AccountRemoved(removed, account, msg.sender, block.timestamp);
         return removed;
@@ -104,7 +89,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         return allowlist[index];
     }
 
-    function getAccounts() public view returns (address[] memory){
+    function getAccounts() public view returns (address[] memory) {
         return allowlist;
     }
 

@@ -1,11 +1,14 @@
-pragma solidity 0.8.0;
+pragma solidity 0.6.0;
 // SPDX-License-Identifier: UNLICENSED
 
 import "./AdminProxy.sol";
 import "./AdminList.sol";
 
-
 contract Admin is AdminProxy, AdminList {
+    // Declaração dos eventos
+    event AdminAdded(bool success, address indexed admin, address indexed addedBy, uint256 timestamp, string message);
+    event AdminRemoved(bool success, address indexed admin, address indexed removedBy, uint256 timestamp);
+
     modifier onlyAdmin() {
         require(isAuthorized(msg.sender), "Sender not authorized");
         _;
@@ -16,24 +19,28 @@ contract Admin is AdminProxy, AdminList {
         _;
     }
 
-    constructor() {
+    constructor() public {
         add(msg.sender);
     }
 
-    function isAuthorized(address _address) override public view returns (bool) {
+    function isAuthorized(address _address) public override view returns (bool) {
         return exists(_address);
     }
 
     function addAdmin(address _address) public onlyAdmin returns (bool) {
+        bool result;
+        string memory message;
+
         if (msg.sender == _address) {
-            emit AdminAdded(false, _address, msg.sender, block.timestamp, "Adding own account as Admin is not permitted");
-            return false;
+            message = "Adding own account as Admin is not permitted";
+            result = false;
         } else {
-            bool result = add(_address);
-            string memory message = result ? "Admin account added successfully" : "Account is already an Admin";
-            emit AdminAdded(result, _address, msg.sender, block.timestamp, message);
-            return result;
+            result = add(_address);
+            message = result ? "Admin account added successfully" : "Account is already an Admin";
         }
+
+        emit AdminAdded(result, _address, msg.sender, block.timestamp, message);
+        return result;
     }
 
     function removeAdmin(address _address) public onlyAdmin notSelf(_address) returns (bool) {
@@ -42,11 +49,13 @@ contract Admin is AdminProxy, AdminList {
         return removed;
     }
 
-    function getAdmins() public view returns (address[] memory){
+    function getAdmins() public view returns (address[] memory) {
         return allowlist;
     }
 
     function addAdmins(address[] memory accounts) public onlyAdmin returns (bool) {
-        return addAll(accounts, msg.sender);
+        bool success = addAll(accounts, msg.sender);
+        // Aqui pode-se emitir eventos para cada admin adicionado se necessário
+        return success;
     }
 }
