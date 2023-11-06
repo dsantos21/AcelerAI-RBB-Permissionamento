@@ -1,5 +1,5 @@
-pragma solidity 0.6.0;
 // SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.6.0;
 
 import "./NodeRulesProxy.sol";
 import "./NodeRulesList.sol";
@@ -19,19 +19,19 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bytes32 enodeHigh,
         bytes32 enodeLow
     );
+
     address private owner;
 
-    // In read-only mode, rules can't be added/removed
-    // This will be used to protect data when upgrading contracts
+    // Em modo somente leitura, regras não podem ser adicionadas/removidas
     bool private readOnlyMode = false;
 
-    // Version of this contract: semver like 1.2.14 represented like 001002014
+    // Versão deste contrato: semver como 1.2.14 representado como 001002014
     uint private version = 1000000;
 
     NodeIngress private nodeIngressContract;
 
     modifier onlyOnEditMode() {
-        require(!readOnlyMode, "In read-only mode: rules cannot be modified");
+        require(!readOnlyMode, "In read only mode: rules cannot be modified");
         _;
     }
 
@@ -47,7 +47,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         _;
     }
 
-    constructor(NodeIngress _nodeIngressAddress) public {
+    constructor (NodeIngress _nodeIngressAddress) public {
         nodeIngressContract = _nodeIngressAddress;
         owner = msg.sender;
     }
@@ -61,13 +61,13 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
     }
 
     function enterReadOnly() public onlyAdmin returns (bool) {
-        require(!readOnlyMode, "Already in read-only mode");
+        require(!readOnlyMode, "Already in read only mode");
         readOnlyMode = true;
         return true;
     }
 
     function exitReadOnly() public onlyAdmin returns (bool) {
-        require(readOnlyMode, "Not in read-only mode");
+        require(readOnlyMode, "Not in read only mode");
         readOnlyMode = false;
         return true;
     }
@@ -81,7 +81,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bytes32 destinationEnodeLow,
         bytes16,
         uint16
-    ) override public view returns (bytes32) {
+    ) public view override returns (bytes32) {
         if (enodePermitted(sourceEnodeHigh, sourceEnodeLow) &&
             enodePermitted(destinationEnodeHigh, destinationEnodeLow)) {
             return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
@@ -90,6 +90,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         }
     }
 
+
     function enodePermitted(
         bytes32 enodeHigh,
         bytes32 enodeLow
@@ -97,7 +98,26 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         return exists(enodeHigh, enodeLow);
     }
 
-    function addNode(
+    function addNodeDuringDeploy(
+        bytes32 enodeHigh,
+        bytes32 enodeLow,
+        NodeType nodeType,
+        bytes6 geoHash,
+        string memory name,
+        string memory organization
+    ) public onlyAdmin onlyOnEditMode onlyOwner returns (bool){
+        bool added = add(enodeHigh, enodeLow, nodeType, geoHash, name, organization);
+        if (added) {
+            emit NodeAdded(added, enodeHigh, enodeLow);
+        }
+        return added;
+    }
+
+    function finishDeploy() public onlyOwner {
+        owner = address(0);
+    }
+
+    function addEnode(
         bytes32 enodeHigh,
         bytes32 enodeLow,
         NodeType nodeType,
@@ -108,6 +128,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bool added = add(enodeHigh, enodeLow, nodeType, geoHash, name, organization);
 
         if (added) {
+            triggerRulesChangeEvent(false);
             emit NodeAdded(added, enodeHigh, enodeLow);
         }
 
@@ -121,6 +142,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
         bool removed = remove(enodeHigh, enodeLow);
 
         if (removed) {
+            triggerRulesChangeEvent(true);
             emit NodeRemoved(removed, enodeHigh, enodeLow);
         }
 
@@ -133,6 +155,7 @@ contract NodeRules is NodeRulesProxy, NodeRulesList {
 
     function getByIndex(uint index) public view returns (bytes32 enodeHigh, bytes32 enodeLow, NodeType nodeType, bytes6 geoHash, string memory name, string memory organization) {
         require(index < size(), "Index out of bounds");
+
         enode memory item = allowlist[index];
         return (item.enodeHigh, item.enodeLow, item.nodeType, item.geoHash, item.name, item.organization);
     }
