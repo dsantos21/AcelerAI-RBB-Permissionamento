@@ -15,7 +15,7 @@ contract("Account Rules (Events & Management)", (accounts) => {
     let rulesContract;
     let adminContract;
 
-    before(async () => {
+    beforeEach(async () => {
       ingressContract = await IngressContract.new();
 
       adminContract = await AdminContract.new();
@@ -32,7 +32,8 @@ contract("Account Rules (Events & Management)", (accounts) => {
 
     it("Should return contract version", async () => {
         let result = await rulesContract.getContractVersion.call();
-        assert.isNotNull(result);
+        //assert.isNotNull(result);  // alterado para o comando abaixo devido a erro c/ as bibliotecas de teste do hardhat 
+        assert.notEqual(result, null);
     });
 
     it("getAccounts return empty array when account list is empty", async () => {

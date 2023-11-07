@@ -12,7 +12,7 @@ contract('Account Rules (Read-only mode)', () => {
 
   beforeEach(async () => {
     ingressContract = await Ingress.deployed();
-    rulesContract = await Rules.new(Ingress.address);
+    rulesContract = await Rules.new(ingressContract.address);
   })
 
   it("should toggle read-only flag on enter/exit read-mode method invocation", async () => {
@@ -37,7 +37,8 @@ contract('Account Rules (Read-only mode)', () => {
       await rulesContract.addAccount(address1);
       assert.fail("Expected error when adding on readOnly mode");
     } catch (err) {
-      expect(err.reason).to.contain("In read only mode: rules cannot be modified");
+      //expect(err.reason).to.contain('In read only mode: rules cannot be modified'); // alterado para o comando abaixo devido a erro c/ as bibliotecas de teste do hardhat 
+      expect(err.message).to.contain("In read only mode: rules cannot be modified");
     }
   });
 
@@ -48,7 +49,8 @@ contract('Account Rules (Read-only mode)', () => {
       await rulesContract.removeAccount(address1);
       assert.fail("Expected error when adding on readOnly mode");
     } catch (err) {
-      expect(err.reason).to.contain("In read only mode: rules cannot be modified");
+      //expect(err.reason).to.contain('In read only mode: rules cannot be modified'); // alterado para o comando abaixo devido a erro c/ as bibliotecas de teste do hardhat 
+      expect(err.message).to.contain("In read only mode: rules cannot be modified");
     }
   });
 
@@ -58,7 +60,8 @@ contract('Account Rules (Read-only mode)', () => {
       await rulesContract.exitReadOnly();
       assert.fail("Expected error when exiting read-only mode not being in read-only mode");
     } catch (err) {
-      expect(err.reason).to.contain("Not in read only mode");
+      //expect(err.reason).to.contain('Not in read only mode'); // alterado para o comando abaixo devido a erro c/ as bibliotecas de teste do hardhat 
+      expect(err.message).to.contain("Not in read only mode");
     }
   });
 
@@ -69,7 +72,8 @@ contract('Account Rules (Read-only mode)', () => {
       await rulesContract.enterReadOnly();
       assert.fail("Expected error when entering read-only mode being in read-only mode");
     } catch (err) {
-      expect(err.reason).to.contain("Already in read only mode");
+      //expect(err.reason).to.contain('Already in read only mode'); // alterado para o comando abaixo devido a erro c/ as bibliotecas de teste do hardhat 
+      expect(err.message).to.contain("Already in read only mode");
     }
   });
 });

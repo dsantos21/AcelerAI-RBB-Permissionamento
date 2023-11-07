@@ -45,7 +45,7 @@ _Nota: A versão 1 "pura" dos smart contracts de permissionamento da Consensys (
 
   - Modificação feita em `migrations/3_deploy_node_ingress_rules_contract.js` que executa a função `setValidateEnodeIdOnly(true)` para **não** considerar IP e Porta na adição e remoção de nós.
   - Adição do endereço de quem permissionou e o _block timestamp_ nos eventos de adição e remoção de contas.
-  - Compatibilidade de instalação dos pacotes em ambiente corporativo. Foi adicionado no `package.json` a dependência `"truffle-corporative": "npm:truffle@5.3.3"` que instala a versão 5.3.3 do truffle (versão máxima do truffle suportada em ambiente corporativo) e nivela as outras dependências com a versão 5.4.24 do truffle.
+  ~~- Compatibilidade de instalação dos pacotes em ambiente corporativo. Foi adicionado no `package.json` a dependência `"truffle-corporative": "npm:truffle@5.3.3"` que instala a versão 5.3.3 do truffle (versão máxima do truffle suportada em ambiente corporativo) e nivela as outras dependências com a versão 5.4.24 do truffle.~~
 
 - V2_Multisig_Beta: contém como base a implementação do _frontend_ e _backend_ da versão 2 dos _smart contracts_ de permissionamento [feita pela consensys](https://github.com/ConsenSys/permissioning-smart-contracts) com a implementação **- ainda em desenvolvimento/não concluída -** de múltiplas assinaturas nas transações dos _smart contracts_ de permissionamento. Os testes automatizados, os _scripts_ de migração e o _frontend_ **não** acompanharam essas mudanças feitas.
 
@@ -54,18 +54,20 @@ _Nota: A versão 1 "pura" dos smart contracts de permissionamento da Consensys (
 - A [documentação do Besu](https://besu.hyperledger.org/en/stable/Tutorials/Permissioning/Getting-Started-Onchain-Permissioning/)
 descreve como utilizar os contratos de permissionamento _onchain_ com o Besu.
 
-- Em um ambiente corporativo com proxy, utilize a versão 5.3.3 do truffle. [Versões posteriores a esta não funcionam corretamente nestes ambientes.](https://github.com/trufflesuite/truffle/issues/4016)
+~~- Em um ambiente corporativo com proxy, utilize a versão 5.3.3 do truffle. [Versões posteriores a esta não funcionam corretamente nestes ambientes.](https://github.com/trufflesuite/truffle/issues/4016)~~
+
+- Usar uma versão de Node.js compatível com Hardhat. Este projeto foi testado na versão v20.8.1. 
 
 - Os testes automatizados **não** estão presentes no arquivo `permissioningDeploy.tar.gz` contido nas releases. O arquivo `permissioningDeploy.tar.gz` é destinado para ambientes em produção e, portanto, não possui suporte para testes.
 
 ## Organização dos diretórios da branch V1-backend
 
 - O diretório _contracts_ contém todos os _smart contracts_ de permissionamento.
-- O diretório _migrations_ contém os _scripts_ de migração para o _deploy_ dos _smart contracts_.
-- O diretório _scripts_ contém _scripts_ responsáveis pela obtenção e validação das variáveis de ambiente. As variáveis de ambiente são utilizadas nos _scripts_ de migração e no arquivo `truffle-config.js`.
+- O diretório _scripts/deploy_ contém os _scripts_ para o _deploy_ dos _smart contracts_.
+- O diretório _scripts/utils_ contém _scripts_ responsáveis pela obtenção e validação das variáveis de ambiente. As variáveis de ambiente são utilizadas nos _scripts_ de _deploy_ e de testes.
 - O diretório _test_ contém os testes automatizados do projeto.
-- O diretório node_modules contém todos os pacotes necessários para o projeto. O diretório e os pacotes são criados somente após a instalação das dependências do projeto (ao executar `yarn install`). As dependências do projeto são encontradas no arquivo `package.json`.
-- o diretório src/chain/abis contém as abis dos _smart contracts_. As abis são criadas somente após a compilação dos _smart contracts_.
+- O diretório _node_modules_ contém todos os pacotes necessários para o projeto. O diretório e os pacotes são criados somente após a instalação das dependências do projeto (ao executar `yarn install`). As dependências do projeto são encontradas no arquivo `package.json`.
+- o diretório _artifacts/contracts_ contém as abis dos _smart contracts_. As abis são criadas somente após a compilação dos _smart contracts_.
 
 ## Desenvolvimento
 
@@ -77,15 +79,21 @@ Execute `yarn install` para instalar as dependências do projeto. Essa etapa só
 
 ### Compilar
 
-Execute `yarn truffle compile` para compilar os _smart contracts_.
+Execute `yarn compile` para compilar os _smart contracts_.
 
 ### Testar
 
 Execute `yarn test` para realizar os testes automatizados dos _smart contracts_ de permissionamento.
 
-### Levantar Nó ganache
+**OBS:** Se houver um arquivo .env criado, comente as variáveis NODE_INGRESS_CONTRACT_ADDRESS e ACCOUNT_INGRESS_CONTRACT_ADDRESS no arquivo para realizar os testes.
 
-Execute `yarn truffle develop` para iniciar um nó ganache e criar uma sessão de console do Truffle. Ao iniciar um nó ganache, será dado uma lista de contas e as chaves privadas correspondentes. Neste console, podem ser executados os comandos `test` (para realizar testes automatizados utilizando o nó ganache) e `migrate --reset` (para realizar o _deploy_ dos _smart contracts_ no nó ganache). Mantenha esse console aberto para manter o nó ganache em execução.
+### Levantar Nó Hardhat
+
+Execute `yarn hardhat node` para iniciar um nó Hardhat. Ao iniciar um nó Hardhat, será dado o _endpoint_ do nó Hardhat, uma lista de contas e as chaves privadas correspondentes. Mantenha esse terminal aberto para manter o nó Hardhat em execução. 
+
+Execute `yarn deploy --network localhost` para realizar o _deploy_ dos _smart contracts_ no nó Hardhat. 
+
+**OBS:** Se houver um arquivo .env criado, comente as variáveis NODE_INGRESS_CONTRACT_ADDRESS e ACCOUNT_INGRESS_CONTRACT_ADDRESS no arquivo .env para realizar o _deploy_ inicial no nó Hardhat. Após o deploy inicial, os endereços listados na console para os contratos NodeIngress e AccountIngress podem ser copiados para essas variáveis.
 
 ## Produção
 
@@ -127,6 +135,6 @@ Execute `yarn truffle develop` para iniciar um nó ganache e criar uma sessão d
 - Faça o deploy
 
     ```bash
-    yarn truffle migrate --reset --network besu
+    yarn deploy --network besu
 
     ```

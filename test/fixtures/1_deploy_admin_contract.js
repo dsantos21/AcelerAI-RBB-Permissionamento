@@ -1,12 +1,14 @@
-const AllowlistUtils = require('../scripts/allowlist_utils');
+const AllowlistUtils = require('../../scripts/utils/allowlist_utils');
 
 const Admin = artifacts.require("./Admin.sol");
 
-module.exports = async(deployer, network) => {
-    await deployer.deploy(Admin);
-    console.log("   > Admin contract deployed with address = " + Admin.address);
+async function deploy() {
+    //await deployer.deploy(Admin);
+    //console.log("   > Admin contract deployed with address = " + Admin.address);
+    //let instance = await Admin.deployed();
 
-    let instance = await Admin.deployed();
+    const instance = await Admin.new(); 
+    Admin.setAsDeployed(instance);
 
     if(AllowlistUtils.isInitialAdminAccountsAvailable()) {
         console.log("   > Adding Initial Admin Accounts ...");
@@ -16,4 +18,8 @@ module.exports = async(deployer, network) => {
             console.log ("   > Initial admin accounts added : " + initialAdminAccounts); 
         }
     } 
+}
+
+module.exports = {
+    deploy
 }

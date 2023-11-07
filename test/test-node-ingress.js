@@ -57,7 +57,7 @@ contract ("Node Ingress (no contracts registered)", (accounts) => {
             await nodeIngressContract.setContractAddress(RULES, "0x0000000000000000000000000000000000000000");
             assert.fail("Should not allow address(0) Contract in registry");
         } catch (err) {
-            expect(err.reason).to.contain("Contract address must not be zero");
+            expect(err.message).to.contain("Contract address must not be zero");
         }
     });
 
@@ -189,7 +189,7 @@ contract("Ingress contract", (accounts) => {
             await nodeIngressContract.setContractAddress(RULES, nodeRulesContract.address, { from: accounts[1] });
             assert.fail("Unauthorized sender was able to set Contract in registry");
         } catch (err) {
-            expect(err.reason).to.contain("Not authorized to update contract registry");
+            expect(err.message).to.contain("Not authorized to update contract registry");
         }
 
         // Attempt to remove the Admin contract
@@ -197,7 +197,7 @@ contract("Ingress contract", (accounts) => {
             await nodeIngressContract.removeContract(ADMIN, { from: accounts[1] });
             assert.fail("Unauthorized sender was able to remove Contract in registry");
         } catch (err) {
-            expect(err.reason).to.contain("Not authorized to update contract registry");
+            expect(err.message).to.contain("Not authorized to update contract registry");
         }
     });
 

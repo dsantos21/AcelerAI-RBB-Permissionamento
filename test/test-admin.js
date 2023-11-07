@@ -24,7 +24,7 @@ contract("Admin (admin management)", async accounts => {
       await adminContract.addAdmin(accounts[2], { from: accounts[1] });
       expect.fail(null, null, "Modifier was not enforced")
     } catch(err) {
-      expect(err.reason).to.contain('Sender not authorized');
+      expect(err.message).to.contain('Sender not authorized');
     }
   });
 
@@ -39,7 +39,7 @@ contract("Admin (admin management)", async accounts => {
       await adminContract.removeAdmin(accounts[2], { from: accounts[1] });
       expect.fail(null, null, "Modifier was not enforced")
     } catch(err) {
-      expect(err.reason).to.contain("Sender not authorized");
+      expect(err.message).to.contain("Sender not authorized");
     }
   });
 
@@ -58,7 +58,7 @@ contract("Admin (admin management)", async accounts => {
       await adminContract.removeAdmin(accounts[0], { from: accounts[0] });
       expect.fail(null, null, "Modifier was not enforced")
     } catch(err) {
-      expect(err.reason).to.contain("Cannot invoke method with own account as parameter");
+      expect(err.message).to.contain("Cannot invoke method with own account as parameter");
     }
   });
 

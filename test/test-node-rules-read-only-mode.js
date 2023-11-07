@@ -16,7 +16,7 @@ contract('NodeRules (Read-only mode)', () => {
 
   beforeEach(async () => {
     nodeIngressContract = await NodeIngress.deployed();
-    nodeRulesContract = await NodeRules.new(NodeIngress.address);
+    nodeRulesContract = await NodeRules.new(nodeIngressContract.address);
   })
 
   it("should toggle read-only flag on enter/exit read-mode method invocation", async () => {
@@ -41,7 +41,7 @@ contract('NodeRules (Read-only mode)', () => {
       await nodeRulesContract.addEnode(node1High, node1Low, node1Type, node1GeoHash, node1Name, node1Organization);
       assert.fail("Expected error when adding enode on readOnly mode");
     } catch (err) {
-      expect(err.reason).to.contain("In read only mode: rules cannot be modified");
+      expect(err.message).to.contain("In read only mode: rules cannot be modified");
     }
   });
 
@@ -52,7 +52,7 @@ contract('NodeRules (Read-only mode)', () => {
       await nodeRulesContract.removeEnode(node1High, node1Low);
       assert.fail("Expected error when adding enode on readOnly mode");
     } catch (err) {
-      expect(err.reason).to.contain("In read only mode: rules cannot be modified");
+      expect(err.message).to.contain("In read only mode: rules cannot be modified");
     }
   });
 
@@ -62,7 +62,7 @@ contract('NodeRules (Read-only mode)', () => {
       await nodeRulesContract.exitReadOnly();
       assert.fail("Expected error when exiting read-only mode not being in read-only mode");
     } catch (err) {
-      expect(err.reason).to.contain("Not in read only mode");
+      expect(err.message).to.contain("Not in read only mode");
     }
   });
 
@@ -73,7 +73,7 @@ contract('NodeRules (Read-only mode)', () => {
       await nodeRulesContract.enterReadOnly();
       assert.fail("Expected error when entering read-only mode being in read-only mode");
     } catch (err) {
-      expect(err.reason).to.contain("Already in read only mode");
+      expect(err.message).to.contain("Already in read only mode");
     }
   });
 });

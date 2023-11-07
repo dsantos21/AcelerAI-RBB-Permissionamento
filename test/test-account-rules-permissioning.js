@@ -116,7 +116,8 @@ contract("Account Rules (Permissioning)", (accounts) => {
       await rulesContract.addAccount(address1, { from: accounts[1] });
       expect.fail(null, null, "Modifier was not enforced")
     } catch(err) {
-      expect(err.reason).to.contain('Sender not authorized');
+      //expect(err.reason).to.contain('Sender not authorized'); // alterado para o comando abaixo devido a erro c/ as bibliotecas de teste do hardhat 
+      expect(err.message).to.contain('Sender not authorized');
     }
   });
 
@@ -125,7 +126,8 @@ contract("Account Rules (Permissioning)", (accounts) => {
       await rulesContract.addAccount(address1, { from: accounts[1] });
       expect.fail(null, null, "Modifier was not enforced")
     } catch(err) {
-      expect(err.reason).to.contain('Sender not authorized');
+      //expect(err.reason).to.contain('Sender not authorized'); // alterado para o comando abaixo devido a erro c/ as bibliotecas de teste do hardhat 
+      expect(err.message).to.contain('Sender not authorized');
     }
   });
 

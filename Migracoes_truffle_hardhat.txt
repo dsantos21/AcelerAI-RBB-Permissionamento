@@ -1,0 +1,28 @@
+Fonte: https://trufflesuite.com/docs/truffle/how-to/migrate-to-hardhat/
+
+0. Instalação de Node.js compatível com Hardhat (instalada a versão v.20.8.1).
+
+1. Criação da estrutura de projetos Hardhat
+	- Estrutura de diretórios (padrão Hardhat).
+		contracts/
+		scripts/
+		test/
+		hardhat.config.js
+		package.json
+		README.md
+	- Remoção, no package.json, de pacotes Truffle e adição de pacotes Hardhat.
+	Fonte: https://hardhat.org/hardhat-runner/docs/guides/project-setup	
+	
+2. Migração dos scripts de deploy Truffle para Hardhat
+	- scripts/* -> scripts/utils/*
+	- migrations/* -> scripts/deploy/*
+		- Adaptação dos scripts para usar funções Hardhat de deploy
+		Fonte: https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-ethers#helpers
+	- Remoção do diretório migrations.
+	
+3. Testes
+	- Uso do plugin hardhat-truffle5 para minimizar alterações nos scripts de testes (15 scripts)
+	- Criação de "fixtures" para tratar o deploy via migrations usado pelos scripts de testes.
+		- Criação do arquivo test/truffle-fixture.js
+		- Pequenas adaptações dos scripts de migrations (erros no mocha/chai do Hardhat, etc.), que foram movidos para test/fixtures.
+	Fonte: https://hardhat.org/hardhat-runner/docs/other-guides/truffle-migration#migrations-and-hardhat-truffle-fixtures

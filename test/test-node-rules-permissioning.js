@@ -85,7 +85,7 @@ contract("NodeRules (Permissioning)", async accounts => {
       await nodeRulesContract.addNodeDuringDeploy(node3High, node3Low, node3Type, node3GeoHash, node3Name, node3Organization, {from: accounts[1]});
       expect.fail(null, null, "OnlyOwner modifier was not enforced.");
     } catch(err) {
-      expect(err.reason).to.contain('Sender not authorized');
+      expect(err.message).to.contain('Sender not authorized');
     }
 
     await nodeRulesContract.finishDeploy();
@@ -94,7 +94,7 @@ contract("NodeRules (Permissioning)", async accounts => {
       await nodeRulesContract.addNodeDuringDeploy(node3High, node3Low, node3Type, node3GeoHash, node3Name, node3Organization, {from: accounts[0]});
       expect.fail(null, null, "Finish deploy step failed! Address is still an owner.");
     } catch (err) {
-      expect(err.reason).to.contain('Only an owner can call this function.');
+      expect(err.message).to.contain('Only an owner can call this function.');
     }
 
   });
@@ -154,7 +154,7 @@ contract("NodeRules (Permissioning)", async accounts => {
       await nodeRulesContract.addEnode(node1High, node1Low, node1Type, node1GeoHash, node1Name, node1Organization, { from: accounts[1] });
       expect.fail(null, null, "Modifier was not enforced")
     } catch(err) {
-      expect(err.reason).to.contain('Sender not authorized');
+      expect(err.message).to.contain('Sender not authorized');
     }
   });
 
@@ -163,7 +163,7 @@ contract("NodeRules (Permissioning)", async accounts => {
       await nodeRulesContract.addEnode(node1High, node1Low, node1Type, node1GeoHash, node1Name, node1Organization, { from: accounts[1] });
       expect.fail(null, null, "Modifier was not enforced")
     } catch(err) {
-      expect(err.reason).to.contain('Sender not authorized');
+      expect(err.message).to.contain('Sender not authorized');
     }
   });
 

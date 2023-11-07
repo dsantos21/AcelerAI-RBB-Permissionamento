@@ -1,6 +1,6 @@
-const AllowlistUtils = require('../scripts/allowlist_utils');
+const AllowlistUtils = require('../../scripts/utils/allowlist_utils');
 
-module.exports = function(deployer) {
+function validate() {
     console.log("   > Initial validations ...");
     if (AllowlistUtils.isInitialAdminAccountsAvailable()) {
         try {
@@ -32,3 +32,7 @@ module.exports = function(deployer) {
         }
     }  
 };
+
+module.exports = {
+    validate
+}
