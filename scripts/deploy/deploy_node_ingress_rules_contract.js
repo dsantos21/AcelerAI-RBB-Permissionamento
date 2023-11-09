@@ -15,7 +15,7 @@ async function deploy(adminAddress) {
         // Only deploy if we haven't been provided a predeployed address
         NodeIngress = await hre.ethers.deployContract('NodeIngress');
         await NodeIngress.waitForDeployment();
-    
+
         console.log("   > Deployed NodeIngress contract to address = " + NodeIngress.target);
         nodeIngressAddress = NodeIngress.target;
 
@@ -39,15 +39,15 @@ async function deploy(adminAddress) {
     const NodeRules = await hre.ethers.deployContract('NodeRules', [nodeIngressAddress]);
     await NodeRules.waitForDeployment();
     console.log("   > NodeRules deployed with NodeIngress.address = " + nodeIngressAddress);
- 
+
     if(AllowlistUtils.isInitialAllowlistedNodesAvailable()) {
         console.log("   > Adding Initial Allowlisted eNodes ...");
         let allowlistedNodes = AllowlistUtils.getInitialAllowlistedNodes();
         for (i = 0; i < allowlistedNodes.length; i++) {
             let enode = allowlistedNodes[i];
             const { enodeHigh, enodeLow, nodeType, geoHash, name, organization } = AllowlistUtils.enodeToParams(enode);
-            
-            await NodeRules.addNodeDuringDeploy(
+
+            tx =  await NodeRules.addNodeDuringDeploy( // definição de tx para chamá-lo mais abaixo, após o fim de cada transação. (Paliativo para resolver o problema de "encavalamento" de transação).
                 enodeHigh,
                 enodeLow,
                 nodeType,
@@ -55,12 +55,13 @@ async function deploy(adminAddress) {
                 name,
                 organization
             );
+            await tx.wait();
             console.log("     > eNode added: " + enode );
         }
     }
-    tx = await NodeIngress.setContractAddress(rulesContractName, NodeRules.target);
+    tx = await NodeIngress.setContractAddress(rulesContractName, NodeRules.target); // tx aguarda cada transação a ser feita.
     console.log("   > Updated NodeIngress contract with NodeRules address = " + NodeRules.target);
-    
+
     //await NodeRules.finishDeploy();
     console.log("Deploy step finished");
 
