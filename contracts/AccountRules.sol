@@ -3,7 +3,7 @@ pragma solidity 0.5.9;
 import "./AccountRulesProxy.sol";
 import "./AccountRulesList.sol";
 import "./AccountIngress.sol";
-import "./Admin.sol";
+import "./AccountAdmin.sol";
 
 
 contract AccountRules is AccountRulesProxy, AccountRulesList {
@@ -25,7 +25,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         address adminContractAddress = ingressContract.getContractAddress(ingressContract.ADMIN_CONTRACT());
 
         require(adminContractAddress != address(0), "Ingress contract must have Admin contract registered");
-        require(Admin(adminContractAddress).isAuthorized(msg.sender), "Sender not authorized");
+        require(AccountAdmin(adminContractAddress).isAuthorized(msg.sender), "Sender not authorized");
         _;
     }
 

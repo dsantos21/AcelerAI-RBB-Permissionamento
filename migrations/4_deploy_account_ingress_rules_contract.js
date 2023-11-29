@@ -3,7 +3,7 @@ const AllowlistUtils = require('../scripts/allowlist_utils');
 
 const Rules = artifacts.require("./AccountRules.sol");
 const AccountIngress = artifacts.require("./AccountIngress.sol");
-const Admin = artifacts.require("./Admin.sol");
+const AccountAdmin = artifacts.require("./AccountAdmin.sol");
 
 const adminContractName = Web3Utils.utf8ToHex("administration");
 const rulesContractName = Web3Utils.utf8ToHex("rules");
@@ -29,9 +29,9 @@ module.exports = async(deployer, network) => {
         console.error("   > Predeployed AccountIngress contract is not responding like an AccountIngress contract at address = " + accountIngress);
     }
 
-    const admin = await Admin.deployed();
-    await accountIngressInstance.setContractAddress(adminContractName, admin.address);
-    console.log("   > Updated AccountIngress with Admin address = " + admin.address);
+    const accountAdmin = await AccountAdmin.deployed();
+    await accountIngressInstance.setContractAddress(adminContractName, accountAdmin.address);
+    console.log("   > Updated AccountIngress with AccountAdmin address = " + accountAdmin.address);
 
     await deployer.deploy(Rules, accountIngress);
     console.log("   > Rules deployed with AccountIngress.address = " + accountIngress);
