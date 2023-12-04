@@ -15,7 +15,7 @@ contract AccountAdmin is Admin
     {
         mapping(address => bool) voters;
         uint256 count;
-        uint256 lastVoteTimestamp;
+        uint256 firstVoteTimestamp;
     }
     mapping(address => Vote) public votesFor;
     address[] public votedForSuperAdmin;
@@ -27,7 +27,7 @@ contract AccountAdmin is Admin
     uint256 public currentQuorum;
     uint256 public fixedQuorum;
 
-    uint256 public voteDuration;
+    uint256 public electionDuration;
     
 
     modifier onlyAdmin() 
@@ -48,7 +48,7 @@ contract AccountAdmin is Admin
         setSuperAdmin(msg.sender);
         quorumType = QuorumType.FIXED;
         fixedQuorum = 1; 
-        voteDuration = 3 days;
+        electionDuration = 3 days;
         quarantine = 2 days; 
     }
 
@@ -158,7 +158,7 @@ contract AccountAdmin is Admin
     function setVoteDuration(uint256 duration) public onlySuperAdmin 
     {
         require(duration >= 1 days, "Vote duration must be at least 1 day.");
-        voteDuration = duration;
+        electionDuration = duration;
     }
 
     function voteForSuperAdmin (address superAddr) public onlyAdmin returns (bool) {
@@ -197,12 +197,13 @@ contract AccountAdmin is Admin
     function vote(mapping(address => Vote) storage votes, address superAddr) private returns(bool) {        
         require(!votes[superAddr].voters[msg.sender], "You've already voted for this proposal.");
 
-        if ((block.timestamp == 0) || (block.timestamp > votes[superAddr].lastVoteTimestamp + voteDuration)) {
+        // If there is no current voting process or the voting process has expired, start a new one.
+        if ((votes[superAddr].firstVoteTimestamp == 0) || (block.timestamp > votes[superAddr].firstVoteTimestamp + electionDuration)) {
             delete votes[superAddr];
-            votes[superAddr].lastVoteTimestamp = block.timestamp;
+            votes[superAddr].firstVoteTimestamp = block.timestamp;
         }
 
-        if (block.timestamp <= votes[superAddr].lastVoteTimestamp + voteDuration) {
+        if (block.timestamp <= votes[superAddr].firstVoteTimestamp + electionDuration) {
             votes[superAddr].voters[msg.sender] = true;
             votes[superAddr].count++;
             votedForSuperAdmin.push(superAddr);
