@@ -1,31 +1,34 @@
 pragma solidity 0.5.9;
 
-import "./AdminProxy.sol";
 import "./Admin.sol";
-
 
 contract AccountAdmin is Admin 
 {
     address public superAdmin;
 
+    // Quarantine
+    uint256 public quarantine;
+    mapping(address => uint256) public adminQuarantine;
+
+    // Voting
     struct Vote 
     {
         mapping(address => bool) voters;
         uint256 count;
         uint256 lastVoteTimestamp;
     }
-
-    uint256 public voteDuration;
-
-    enum QuorumType { MAJORITY, TWO_THIRDS, TWO_THIRDS_PLUS_ONE, FIXED };
-    QuorumType public quorumType;
-    uint256 public quorum;
-    uint256 public fixedQuorum;
-    
     mapping(address => Vote) public votesFor;
     address[] public votedForSuperAdmin;
 
     mapping(address => Vote) public votesAgainst;
+
+    enum QuorumType { MAJORITY, TWO_THIRDS, TWO_THIRDS_PLUS_ONE, FIXED }
+    QuorumType public quorumType;
+    uint256 public currentQuorum;
+    uint256 public fixedQuorum;
+
+    uint256 public voteDuration;
+    
 
     modifier onlyAdmin() 
     {
@@ -41,11 +44,12 @@ contract AccountAdmin is Admin
 
     constructor() public 
     {
-        super();
+        super;
         setSuperAdmin(msg.sender);
         quorumType = QuorumType.FIXED;
         fixedQuorum = 1; 
         voteDuration = 3 days;
+        quarantine = 2 days; 
     }
 
     function setSuperAdmin(address _address) private {
@@ -70,7 +74,7 @@ contract AccountAdmin is Admin
     * O AccountIngress é preloaded, logo não pode ser modificado. 
     * Note que essa função overrides a similar do Admin.sol. 
     */
-    function isAuthorized(address _address) public view override returns (bool) 
+    function isAuthorized(address _address) public view returns (bool) 
     {
         return isSuperAdmin(_address);
     }
@@ -79,6 +83,45 @@ contract AccountAdmin is Admin
     {
         return exists(_address);
     }
+
+    function addAdmin(address _address) public onlyAdmin returns (bool) 
+    {
+        require(!isQuarantined(_address), "Admin is still in quarantine.");
+
+        bool added = super.addAdmin(_address);
+        if (added)
+            adminQuarantine[_address] = block.timestamp + quarantine;
+            adminQuarantine[msg.sender] = block.timestamp + quarantine;
+            adjustQuorum();
+        return added;
+    }
+
+    function removeAdmin(address _address) public onlyAdmin returns (bool) 
+    {
+        require(!isQuarantined(_address), "Admin is still in quarantine.");
+
+        bool removed = super.removeAdmin(_address);
+        if (removed)
+            adminQuarantine[_address] = block.timestamp + quarantine;
+            adminQuarantine[msg.sender] = block.timestamp + quarantine;
+            adjustQuorum();
+        return removed;
+    }
+
+    function addAdmins(address[] memory accounts) public onlySuperAdmin returns (bool) {
+        bool allAdded = super.addAdmins(accounts);
+        adjustQuorum();
+        return allAdded;
+    }
+
+    function setQuarantine(uint256 duration) public onlySuperAdmin {
+        require(duration >= 1 days, "Quarantine duration must be at least 1 day.");
+        quarantine = duration;
+    }    
+
+    function isQuarantined(address _address) public view returns (bool) {
+        return adminQuarantine[_address] > block.timestamp;
+    }    
 
     function setQuorumType(QuorumType _quorumType) public onlySuperAdmin 
     {
@@ -90,7 +133,7 @@ contract AccountAdmin is Admin
     {
         require(quorumType == QuorumType.FIXED, "Quorum type is not fixed.");
         require(_fixedQuorum > 0, "Quorum must be greater than zero.");
-        require(_fixedQuorum <= size(), "Quorum must be less than or equal to the number of admins.")
+        require(_fixedQuorum <= size(), "Quorum must be less than or equal to the number of admins.");
 
         fixedQuorum = _fixedQuorum;
         adjustQuorum();
@@ -99,39 +142,17 @@ contract AccountAdmin is Admin
     function adjustQuorum() private 
     {
         if (quorumType == QuorumType.MAJORITY) {
-            quorum = (size() / 2) + 1;
+            currentQuorum = (size() / 2) + 1;
         } else if (quorumType == QuorumType.TWO_THIRDS) {
-            quorum = (size() * 2 / 3);
+            currentQuorum = (size() * 2 / 3);
         } else if (quorumType == QuorumType.TWO_THIRDS_PLUS_ONE) {
-            quorum = (size() * 2 / 3) + 1;
+            currentQuorum = (size() * 2 / 3) + 1;
         } else if (quorumType == QuorumType.FIXED) {
             if (size() > fixedQuorum)
-                quorum = fixedQuorum;
+                currentQuorum = fixedQuorum;
             else
-                quorum = size();
+                currentQuorum = size();
         }
-    }
-
-    function addAdmin(address _address) public override onlySuperAdmin returns (bool) 
-    {
-        bool added = super(_address);
-        if (added)
-            adjustQuorum();
-        return added;
-    }
-
-    function addAdmins(address[] memory accounts) public override onlySuperAdmin returns (bool) {
-        allAdded = super(accounts);
-        adjustQuorum();
-        return allAdded;
-    }
-
-    function removeAdmin(address _address) public override onlySuperAdmin returns (bool) 
-    {
-        removed = super(_address);
-        if (removed)
-            adjustQuorum();
-        return removed;
     }
 
     function setVoteDuration(uint256 duration) public onlySuperAdmin 
@@ -142,7 +163,7 @@ contract AccountAdmin is Admin
 
     function voteForSuperAdmin (address superAddr) public onlyAdmin returns (bool) {
         require(superAdmin == address(0), "There is already a super admin.");
-        require(exists(superAddr), "This address is not an admin, so cannot be a super admin.")
+        require(exists(superAddr), "This address is not an admin, so cannot be a super admin.");
 
         bool elected = vote(votesFor, superAddr);
         if (elected)
@@ -151,9 +172,8 @@ contract AccountAdmin is Admin
     }
 
     function revertVoteForSuperAdmin (address superAddr) public onlyAdmin  {
-        require(superAdmin == address(0), "There is already a super admin, so there is not currently a voting process.")
-        require(exists(super), "This address is not an admin, so it was not voted.");
-        require(votes[super].voters[msg.sender], "There is no vote to be reverted.");
+        require(superAdmin == address(0), "There is already a super admin, so there is not currently a voting process.");
+        require(exists(superAddr), "This address is not an admin, so it was not voted.");
 
         revertVote(votesFor, superAddr);
     }
@@ -162,10 +182,9 @@ contract AccountAdmin is Admin
         require(superAdmin != address(0), "There is no a super admin to be removed.");
         require(superAdmin == superAddr, "It is only possible to remove an address which is super admin.");
 
-        bool removed = vote(votesFor, superAddr);
+        bool removed = vote(votesAgainst, superAddr);
         if (removed)
             setSuperAdmin(address(0));
-        return removed;
     }
 
     function revertVoteForRemovingSuperAdmin (address superAddr) public onlyAdmin {
@@ -175,10 +194,10 @@ contract AccountAdmin is Admin
         revertVote(votesAgainst, superAddr);
     }
 
-    function vote(mapping(address => Vote) votes, address superAddr) private returns(bool) {        
+    function vote(mapping(address => Vote) storage votes, address superAddr) private returns(bool) {        
         require(!votes[superAddr].voters[msg.sender], "You've already voted for this proposal.");
 
-        if (block.timestamp == 0) || (block.timestamp > votes[superAddr].lastVoteTimestamp + voteDuration) {
+        if ((block.timestamp == 0) || (block.timestamp > votes[superAddr].lastVoteTimestamp + voteDuration)) {
             delete votes[superAddr];
             votes[superAddr].lastVoteTimestamp = block.timestamp;
         }
@@ -188,7 +207,7 @@ contract AccountAdmin is Admin
             votes[superAddr].count++;
             votedForSuperAdmin.push(superAddr);
 
-            if (votes[superAddr].count >= quorum) {
+            if (votes[superAddr].count >= currentQuorum) {
                 resetAllVotings(votes);
                 return true;
             }
@@ -196,18 +215,18 @@ contract AccountAdmin is Admin
         return false;
     }
 
-    function resetAllVotings(mapping(address => Vote) votes) private {
+    function resetAllVotings(mapping(address => Vote) storage votes) private {
         for (uint i = 0; i < votedForSuperAdmin.length; i++) {
             delete votes[votedForSuperAdmin[i]];
         }
         delete votedForSuperAdmin;
     }
 
-    function revertVote(mapping(address => Vote) votes, address superAddr) private {
+    function revertVote(mapping(address => Vote) storage votes, address superAddr) private {
         require(votes[superAddr].count > 0, "There is no current voting process.");
-        require(!votes[superAddr].voters[msg.sender], "You do not have a active vote for this proposal.");
+        require(votes[superAddr].voters[msg.sender], "You do not have a active vote for this proposal.");
 
         votes[superAddr].voters[msg.sender] = false;
-        voters[superAddr].count--;
+        votes[superAddr].count--;
     }
 }

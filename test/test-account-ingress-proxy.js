@@ -1,6 +1,6 @@
 const AccountIngress = artifacts.require('AccountIngress.sol');
 const AccountRules = artifacts.require('AccountRules.sol');
-const Admin = artifacts.require('Admin.sol');
+const AccountAdmin = artifacts.require('AccountAdmin.sol');
 
 const RULES='0x72756c6573000000000000000000000000000000000000000000000000000000';
 const ADMIN='0x61646d696e697374726174696f6e000000000000000000000000000000000000';
@@ -12,17 +12,17 @@ contract ('AccountIngress (proxying permissioning check to rules contract)', () 
 
   let accountIngressContract;
   let accountRulesContract;
-  let adminContract;
+  let accountAdminContract;
 
   beforeEach(async () => {
     accountIngressContract = await AccountIngress.new();
-    adminContract = await Admin.new();
+    accountAdminContract = await AccountAdmin.new();
     
-    await accountIngressContract.setContractAddress(ADMIN, adminContract.address);
+    await accountIngressContract.setContractAddress(ADMIN, accountAdminContract.address);
     accountRulesContract = await AccountRules.new(accountIngressContract.address);
 
     result = await accountIngressContract.getContractAddress(ADMIN);
-    assert.equal(result, adminContract.address, 'Admin contract should be reg');
+    assert.equal(result, accountAdminContract.address, 'Admin contract should be reg');
   });
 
   it('Should execute proxied call correctly', async () => {
@@ -32,7 +32,7 @@ contract ('AccountIngress (proxying permissioning check to rules contract)', () 
     await accountIngressContract.setContractAddress(RULES, accountRulesContract.address);
 
     result = await accountIngressContract.getContractAddress(ADMIN);
-    assert.equal(result, adminContract.address, 'Admin contract should be reg');
+    assert.equal(result, accountAdminContract.address, 'Admin contract should be reg');
 
     // Verify that the AccountRules contract has been registered
     result = await accountIngressContract.getContractAddress(RULES);
@@ -44,7 +44,6 @@ contract ('AccountIngress (proxying permissioning check to rules contract)', () 
     assert.equal(result, false, "Connection should NOT be allowed before Enodes have been registered");
     assert.equal(result, result2, "Call and proxy call did NOT return the same value");
 
-    // Add the two Enodes to the AccountRules register
     result = await accountRulesContract.addAccount(address1);
     result = await accountRulesContract.addAccount(address2);
 

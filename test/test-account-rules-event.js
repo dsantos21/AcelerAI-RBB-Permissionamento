@@ -1,6 +1,6 @@
 const IngressContract = artifacts.require('Ingress.sol');
 const RulesContract = artifacts.require('AccountRules.sol');
-const AdminContract = artifacts.require('Admin.sol');
+const AccountAdminContract = artifacts.require('AccountAdmin.sol');
 
 // Contract keys
 const RULES_NAME = "0x72756c6573000000000000000000000000000000000000000000000000000000";
@@ -18,7 +18,7 @@ contract("Account Rules (Events & Management)", (accounts) => {
     before(async () => {
       ingressContract = await IngressContract.new();
 
-      adminContract = await AdminContract.new();
+      adminContract = await AccountAdminContract.new();
       await ingressContract.setContractAddress(ADMIN_NAME, adminContract.address);
 
       rulesContract = await RulesContract.new(ingressContract.address);

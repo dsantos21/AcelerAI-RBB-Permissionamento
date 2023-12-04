@@ -43,9 +43,18 @@ module.exports = async(deployer, network) => {
         if (allowlistedAccounts.length > 0) {
             let accountsAddedResult = await accountRulesContract.addAccounts(allowlistedAccounts);
             console.log ("   > Initial Allowlisted Accounts added: " + allowlistedAccounts);
+
+            // If allowlistedAccounts is 2, set fixedQuorumNumber to 2. Otherwise, fix it to 3
+            if (allowlistedAccounts.length == 2)
+                await accountRulesContract.setFixedQuorumNumber(2);
+            else if (allowlistedAccounts.length > 2)
+                await accountRulesContract.setFixedQuorumNumber(3);
         }
     }
 
     await accountIngressInstance.setContractAddress(rulesContractName, Rules.address);
     console.log("   > Updated AccountIngress contract with Rules address = " + Rules.address);
+
+    // Resign to be a super admin
+    await accountAdmin.resignSuperAdmin();
 }

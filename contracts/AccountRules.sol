@@ -25,6 +25,14 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         address adminContractAddress = ingressContract.getContractAddress(ingressContract.ADMIN_CONTRACT());
 
         require(adminContractAddress != address(0), "Ingress contract must have Admin contract registered");
+        require(AccountAdmin(adminContractAddress).isAuthorizedForAccountPermissioning(msg.sender), "Sender not authorized");
+        _;
+    }
+
+    modifier onlySuperAdmin() {
+        address adminContractAddress = ingressContract.getContractAddress(ingressContract.ADMIN_CONTRACT());
+
+        require(adminContractAddress != address(0), "Ingress contract must have Admin contract registered");
         require(AccountAdmin(adminContractAddress).isAuthorized(msg.sender), "Sender not authorized");
         _;
     }

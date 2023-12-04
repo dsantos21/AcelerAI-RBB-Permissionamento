@@ -5,12 +5,11 @@ const AccountAdmin = artifacts.require("./AccountAdmin.sol");
 
 module.exports = async(deployer, network) => {
     await deployer.deploy(Admin);
-    await deployer.deploy(AccountAdmin);
-
     console.log("   > Admin contract deployed with address = " + Admin.address);
-    console.log("   > AccountAdmin contract deployed with address = " + AccountAdmin.address);
-
     let adminInstance = await Admin.deployed();
+
+    await deployer.deploy(AccountAdmin);
+    console.log("   > AccountAdmin contract deployed with address = " + AccountAdmin.address);
     let accountAdminInstance = await AccountAdmin.deployed();
 
     if(AllowlistUtils.isInitialAdminAccountsAvailable()) {

@@ -1,5 +1,6 @@
 const AccountIngressContract = artifacts.require("AccountIngress.sol");
-const AdminContract = artifacts.require("Admin.sol");
+const AccountAdminContract = artifacts.require("AccountAdmin.sol");
+const AccountRulesContract = artifacts.require("AccountRules.sol");
 
 const RULES="0x72756c6573000000000000000000000000000000000000000000000000000000";
 const ADMIN="0x61646d696e697374726174696f6e000000000000000000000000000000000000";
@@ -8,11 +9,12 @@ const address = "0x345ca3e014aaf5dca488057592ee47305d9b3e10".toLowerCase();
 
 contract ("Account Ingress (no contracts registered)", (accounts) => {
     let accountIngressContract;
-    let adminContract;
+    let accountAdminContract;
 
     beforeEach("create a new contract for each test", async () => {
         accountIngressContract = await AccountIngressContract.new();
-        adminContract = await AdminContract.new();
+        accountAdminContract = await AccountAdminContract.new();
+        accountRulesContract = await AccountRulesContract.new(accountIngressContract.address);
     })
 
     it("should allow any account if rules contract has not been registered", async () => {
@@ -44,4 +46,51 @@ contract ("Account Ingress (no contracts registered)", (accounts) => {
           assert.ok("emitRulesChange rejects callers that aren't the rules contract")
         }
     });
+
+    it("should allow the admin contract to be set", async () => {
+        let result = await accountIngressContract.setContractAddress(ADMIN, accountAdminContract.address);
+        assert.ok(result.receipt.status, "setContractAddress should succeed");
+    });
+
+    it("should allow the admin contract to be retrieved", async () => {
+        await accountIngressContract.setContractAddress(ADMIN, accountAdminContract.address);
+        let result = await accountIngressContract.getContractAddress(ADMIN);
+        assert.equal(result, accountAdminContract.address, "Admin contract should be registered");
+    });
+
+    it("should allow the rules contract to be set", async () => {
+        let result = await accountIngressContract.setContractAddress(RULES, accountRulesContract.address);
+        assert.ok(result.receipt.status, "setContractAddress should succeed");
+    });
+
+    it("should allow the rules contract to be retrieved", async () => {
+        await accountIngressContract.setContractAddress(RULES, accountRulesContract.address);
+        let result = await accountIngressContract.getContractAddress(RULES);
+        assert.equal(result, accountRulesContract.address, "Rules contract should be registered");
+    });
+
+    it("should forbid a resigned superadmin to change rules", async() => {
+        await accountIngressContract.setContractAddress(RULES, accountRulesContract.address);
+        await accountIngressContract.setContractAddress(ADMIN, accountAdminContract.address);
+        await accountAdminContract.resignSuperAdmin();
+        try {
+            await accountIngressContract.setContractAddress(RULES, accountRulesContract.address);
+            assert.fail("setContractAddress should deny non superadmin callers")
+        } catch (err) {
+            assert.ok("setContractAddress rejects callers that aren't superadmins")
+        }
+    });
+
+    it("should forbid a resigned superadmin to change admin", async() => {
+        await accountIngressContract.setContractAddress(RULES, accountRulesContract.address);
+        await accountIngressContract.setContractAddress(ADMIN, accountAdminContract.address);
+        await accountAdminContract.resignSuperAdmin();
+        try {
+            await accountIngressContract.setContractAddress(ADMIN, accountAdminContract.address);
+            assert.fail("setContractAddress should deny non superadmin callers")
+        } catch (err) {
+            assert.ok("setContractAddress rejects callers that aren't superadmins")
+        }
+    });
+
 });

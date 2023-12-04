@@ -5,8 +5,14 @@ import "./AdminList.sol";
 
 
 contract Admin is AdminProxy, AdminList {
+    
     modifier onlyAdmin() {
         require(isAuthorized(msg.sender), "Sender not authorized");
+        _;
+    }
+
+    modifier notSelf(address _address) {
+        require(msg.sender != _address, "Cannot invoke method with own account as parameter");
         _;
     }
 
@@ -30,9 +36,7 @@ contract Admin is AdminProxy, AdminList {
         }
     }
 
-    function removeAdmin(address _address) public onlyAdmin returns (bool) {
-        require(size() > 1, "Cannot remove last admin.");
-        require(msg.sender != _address, "Cannot remove yourself.");
+    function removeAdmin(address _address) public onlyAdmin notSelf(_address) returns (bool) {
         bool removed = remove(_address);
         emit AdminRemoved(removed, _address, msg.sender, block.timestamp);
         return removed;
