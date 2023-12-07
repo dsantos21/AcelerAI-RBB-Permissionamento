@@ -46,8 +46,8 @@ contract AccountAdmin is Admin
     {
         super;
         setSuperAdmin(msg.sender);
-        quorumType = QuorumType.FIXED;
-        fixedQuorum = 1; 
+        quorumType = QuorumType.MAJORITY;
+//        fixedQuorum = 1;
         electionDuration = 3 days;
         quarantine = 2 days; 
     }
@@ -84,20 +84,23 @@ contract AccountAdmin is Admin
         return exists(_address);
     }
 
-    function addAdmin(address _address) public onlyAdmin returns (bool) 
+    function addAdmin(address _address) public onlyAdmin returns (bool)
     {
+        require(!isQuarantined(msg.sender), "Admin is still in quarantine.");
         require(!isQuarantined(_address), "Admin is still in quarantine.");
 
         bool added = super.addAdmin(_address);
-        if (added)
+        if (added){
             adminQuarantine[_address] = block.timestamp + quarantine;
             adminQuarantine[msg.sender] = block.timestamp + quarantine;
             adjustQuorum();
+        }
         return added;
     }
 
     function removeAdmin(address _address) public onlyAdmin returns (bool) 
     {
+        require(!isQuarantined(msg.sender), "Admin is still in quarantine.");
         require(!isQuarantined(_address), "Admin is still in quarantine.");
 
         bool removed = super.removeAdmin(_address);
