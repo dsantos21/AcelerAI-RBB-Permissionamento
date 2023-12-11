@@ -1,6 +1,6 @@
 const AccountAdmin = artifacts.require('AccountAdmin.sol');
 const { time } = require('@openzeppelin/test-helpers');
-const {asyncCycle} = require("truffle/build/439.bundled");
+// const {asyncCycle} = require("truffle/build/439.bundled");
 
 contract("AccountAdmin (admin management)", async accounts => {
 
@@ -14,22 +14,29 @@ contract("AccountAdmin (admin management)", async accounts => {
     await accountAdminContract.resignSuperAdmin({from:accounts[0]});
   })
 
+  // TODO #20 - O tipo de quorum está fixo em 1. Logo, já no primero voto, a eleição é ganha e os votos são resetados.
+  // TODO #24 - Não usar "should verify if" para os nomes dos testes. Nesse caso, poderia ser apenas "should stack votes" ou algo assim. 
   it("Should verify if votes stack", async () => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
-    let result = await accountAdminContract.votesFor(accounts[0]);
-    let number_of_votes_before = result.count.words[0];
+    let votesForAccount0Before = await accountAdminContract.votesFor(accounts[0]);
+    let number_of_votes_before = votesForAccount0Before.count;
+    console.log("Before: " + number_of_votes_before + " votes for account 0");
+    
 
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
-    result = await accountAdminContract.votesFor(accounts[0]);
-    let number_of_votes_after = result.count.words[0];
+    let votesForAccount0After = await accountAdminContract.votesFor(accounts[0]);
+    let number_of_votes_after = votesForAccount0After.count;
+    console.log("After: " + number_of_votes_after + " votes for account 0");
 
-    assert.ok(number_of_votes_before !== number_of_votes_after);
+    assert.ok((number_of_votes_before + 1) == number_of_votes_after);
 
   });
 
+  //TODO #21 - Alterar todos os testes para não usar o atributo words (como em result.count.words)
+  //TODO #22 - Esse teste também não considera que o fixedQuorum está 1, logo o teste está passando por acaso. Avaliar outros testes e ajustar. 
   it ("Should verify if votes reset after election", async () => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
-    let admin_before = await accountAdminContract.isSuperAdmin(accounts[0]);
+    let is_admin_before = await accountAdminContract.isSuperAdmin(accounts[0]);
 
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
     let result = await accountAdminContract.votesFor(accounts[0]);
@@ -37,7 +44,7 @@ contract("AccountAdmin (admin management)", async accounts => {
     let admin_after = await accountAdminContract.isSuperAdmin(accounts[0]);
 
     assert.ok(number_of_votes_after === 0);
-    assert.ok(admin_before === false);
+    assert.ok(is_admin_before === false);
     assert.ok(admin_after === true);
   });
 
@@ -47,6 +54,7 @@ contract("AccountAdmin (admin management)", async accounts => {
       await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
       expect.fail(null, null, "User voted twice.");
     } catch(err) {
+      //TODO #23 - Para usar constantes do contrato original, melhor declará-las no início do arquivo e usar aqui. Verificar todos os testes. 
       expect(err.reason).to.contain("You've already voted for this proposal.");
     }
   });
