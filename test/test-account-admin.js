@@ -10,36 +10,48 @@ contract("AccountAdmin (admin management)", async accounts => {
     await accountAdminContract.addAdmin(accounts[1], {from: accounts[0]});
     await time.increase(time.duration.days(2));
     await accountAdminContract.addAdmin(accounts[2], {from: accounts[0]});
+    await time.increase(time.duration.days(2));
+    await accountAdminContract.addAdmin(accounts[3], {from: accounts[0]});
+    await time.increase(time.duration.days(2));
+    await accountAdminContract.addAdmin(accounts[4], {from: accounts[0]});
+    await time.increase(time.duration.days(2));
     await accountAdminContract.setQuorumType(1, {from:accounts[0]});
+
     await accountAdminContract.resignSuperAdmin({from:accounts[0]});
     //coloca o quorum type para majority, para que os testes possam ser feitos
   })
 
-  it("Should stack votes", async () => {
+  it("Should verify if votes stack", async () => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     let votesForAccount0Before = await accountAdminContract.votesFor(accounts[0]);
-    let number_of_votes_before = votesForAccount0Before.count;
+    let number_of_votes_before = parseInt(votesForAccount0Before.count);
+    // console.log("Before: " + number_of_votes_before + " votes for account 0");
+
 
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
     let votesForAccount0After = await accountAdminContract.votesFor(accounts[0]);
-    let number_of_votes_after = votesForAccount0After.count;
-    //depois da eleição, o accounts[0] vira superAdmin e a contagem vai para zero (só tem 3 admins para votar)
+    let number_of_votes_after = parseInt(votesForAccount0After.count);
+    // console.log("After: " + number_of_votes_after + " votes for account 0");
+    //
+    // console.log("number_of_votes_before + 1: " + (number_of_votes_before + 1));
 
-    assert.ok(number_of_votes_before !== number_of_votes_after);
-
+    assert.ok((number_of_votes_before + 1) == number_of_votes_after);
 
   });
 
-  it ("Should make votes reset after election", async () => {
+
+  it ("Votes should reset after election", async () => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     let admin_before = await accountAdminContract.isSuperAdmin(accounts[0]);
 
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
     let votesForAccount0 = await accountAdminContract.votesFor(accounts[0]);
     let number_of_votes_after = votesForAccount0.count;
     let admin_after = await accountAdminContract.isSuperAdmin(accounts[0]);
 
-    assert.ok(number_of_votes_after === 0);
+    // console.log("After: " + number_of_votes_after + " votes for account 0");
+    assert.ok(parseInt(number_of_votes_after) === 0);
     assert.ok(admin_before === false);
     assert.ok(admin_after === true);
   });
@@ -56,7 +68,7 @@ contract("AccountAdmin (admin management)", async accounts => {
 
   it ("Should not permit non-admin be promoted to Super Admin", async() => {
     try{
-      await accountAdminContract.voteForSuperAdmin(accounts[3], {from:accounts[1]});
+      await accountAdminContract.voteForSuperAdmin(accounts[5], {from:accounts[1]});
       expect.fail(null, null, "Non admin could be voted for Super Admin");
     } catch(err) {
       expect(err.reason).to.contain("This address is not an admin, so cannot be a super admin.");
@@ -101,7 +113,7 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Should not be possible to revert a vote for an address that is not a Super Admin", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     try {
-      await accountAdminContract.revertVoteForSuperAdmin(accounts[3], {from: accounts[1]});
+      await accountAdminContract.revertVoteForSuperAdmin(accounts[5], {from: accounts[1]});
       expect.fail(null, null, "Could revert vote for not admin address.");
     }catch(err){
       expect(err.reason).to.contain("This address is not an admin, so it was not voted.");
@@ -120,12 +132,13 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Should remove SuperAdmin after voting process", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
-
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
 
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from: accounts[1]});
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from: accounts[2]});
+    await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from: accounts[3]});
 
     result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == false);
@@ -135,6 +148,7 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Should be possible for SuperAdmin to resign", async() =>{
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
@@ -147,21 +161,23 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Should be possible for SuperAdmin to add many admins", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
 
-    let array = [accounts[3], accounts[4], accounts[5]];
+    let array = [accounts[5], accounts[6], accounts[7]];
 
     await accountAdminContract.addAdmins(array, {from: accounts[0]});
-    assert.ok(accountAdminContract.isQuarantined(accounts[3]));
-    assert.ok(accountAdminContract.isQuarantined(accounts[4]));
     assert.ok(accountAdminContract.isQuarantined(accounts[5]));
+    assert.ok(accountAdminContract.isQuarantined(accounts[6]));
+    assert.ok(accountAdminContract.isQuarantined(accounts[7]));
   });
 
   it("SuperAdmin should be able to change quarantine time", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
@@ -172,6 +188,7 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Setting quarantine time to illegal values should be impossible", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
@@ -188,6 +205,7 @@ contract("AccountAdmin (admin management)", async accounts => {
   it ("SuperAdmin should be able to change quorum type", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
@@ -202,6 +220,7 @@ contract("AccountAdmin (admin management)", async accounts => {
   it ("Quorum type = fixed should not be set to illegal values", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
@@ -231,6 +250,7 @@ contract("AccountAdmin (admin management)", async accounts => {
   it ("SuperAdmin should be able to change vote duration", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
@@ -242,6 +262,7 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Election time interval should not be set to illegal values", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
@@ -257,6 +278,7 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Quorum type: majority should be respected", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from: accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from: accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
@@ -265,6 +287,7 @@ contract("AccountAdmin (admin management)", async accounts => {
     await accountAdminContract.setQuorumType(0, {from: accounts[0]});
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from: accounts[1]});
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from: accounts[2]});
+    await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from: accounts[3]});
     result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == false);
   });
@@ -272,12 +295,13 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Quorum type: two thirds should be respected", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from: accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from: accounts[2]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
 
     let result = await accountAdminContract.isSuperAdmin(accounts[0]);
     assert.ok(result == true);
 
     await accountAdminContract.setQuorumType(1, {from: accounts[0]});
-    await accountAdminContract.addAdmins([accounts[3], accounts[4]], {from:accounts[0]});
+
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from: accounts[1]});
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from: accounts[2]});
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from:accounts[3]});
@@ -288,7 +312,8 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Quorum type: two thids plus one should be respected", async() =>{
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
-    await accountAdminContract.addAdmins([accounts[3], accounts[4], accounts[5], accounts[6]], {from:accounts[0]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
+    await accountAdminContract.addAdmins([accounts[5], accounts[6]], {from:accounts[0]});
     await accountAdminContract.setQuorumType(2, {from:accounts[0]});
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from:accounts[2]});
@@ -308,7 +333,8 @@ contract("AccountAdmin (admin management)", async accounts => {
   it("Quorum type: fixed should be respected", async() => {
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[1]});
     await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[2]});
-    await accountAdminContract.addAdmins([accounts[3], accounts[4]], {from:accounts[0]});
+    await accountAdminContract.voteForSuperAdmin(accounts[0], {from:accounts[3]});
+    // await accountAdminContract.addAdmins([accounts[3], accounts[4]], {from:accounts[0]});
     await accountAdminContract.setQuorumType(3, {from:accounts[0]});
     await accountAdminContract.setFixedQuorumNumber(3, {from: accounts[0]});
     await accountAdminContract.voteForRemovingSuperAdmin(accounts[0], {from:accounts[1]});
@@ -319,16 +345,16 @@ contract("AccountAdmin (admin management)", async accounts => {
   });
 
   it("Admin that has just added another should be quarantined", async() => {
-    await accountAdminContract.addAdmin(accounts[3], {from:accounts[1]});
+    await accountAdminContract.addAdmin(accounts[5], {from:accounts[1]});
     try {
-      await accountAdminContract.addAdmin(accounts[4], {from:accounts[1]});
+      await accountAdminContract.addAdmin(accounts[6], {from:accounts[1]});
       expect.fail(null, null, "Could ignore quarantine time.");
     } catch(err){
       expect(err.reason).to.contain("Admin is still in quarantine.");
     }
 
     try{
-      await accountAdminContract.addAdmin(accounts[4], {from:accounts[3]});
+      await accountAdminContract.addAdmin(accounts[7], {from:accounts[5]});
       expect.fail(null, null, "Added admin could ignore quarantine time.");
     } catch(err){
       expect(err.reason).to.contain("Admin is still in quarantine.");
@@ -337,9 +363,9 @@ contract("AccountAdmin (admin management)", async accounts => {
   });
 
   it("Admin that has just removed another should be quarantined", async() => {
-    await accountAdminContract.addAdmin(accounts[3], {from:accounts[1]});
+    await accountAdminContract.addAdmin(accounts[5], {from:accounts[1]});
     try {
-      await accountAdminContract.removeAdmin(accounts[2], {from:accounts[1]});
+      await accountAdminContract.removeAdmin(accounts[4], {from:accounts[1]});
       expect.fail(null, null, "Could ignore quarantine time.");
     } catch(err){
       expect(err.reason).to.contain("Admin is still in quarantine.");
