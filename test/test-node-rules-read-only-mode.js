@@ -16,7 +16,7 @@ contract('NodeRules (Read-only mode)', () => {
 
   beforeEach(async () => {
     nodeIngressContract = await NodeIngress.deployed();
-    nodeRulesContract = await NodeRules.new(NodeIngress.address);
+    nodeRulesContract = await NodeRules.new(nodeIngressContract.address);
   })
 
   it("should toggle read-only flag on enter/exit read-mode method invocation", async () => {
