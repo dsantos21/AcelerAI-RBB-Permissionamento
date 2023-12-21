@@ -12,7 +12,7 @@ contract('Account Rules (Read-only mode)', () => {
 
   beforeEach(async () => {
     ingressContract = await Ingress.deployed();
-    rulesContract = await Rules.new(Ingress.address);
+    rulesContract = await Rules.new(ingressContract.address);
   })
 
   it("should toggle read-only flag on enter/exit read-mode method invocation", async () => {
