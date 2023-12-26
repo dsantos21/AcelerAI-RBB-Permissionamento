@@ -21,21 +21,21 @@ jobs:
       - name: Install Dependencies
         run: yarn install
 
-      - name: Compile Contracts (Assumindo que a compilação cria a pasta 'src')
-        run: yarn truffle compile --out-dir  'src/chain/abis/*.json'
+      - name: Compile Contracts
+        run: yarn hardhat compile
 
       - name: Create Linux Tarball
-        run: tar -zcvf src.tar.gz -C src .
+        run: tar -zcvf artifacts.tar.gz -C artifacts .
 
       - name: Create Windows Zip
-        run: zip -r src.zip src/*
+        run: zip -r artifacts.zip artifacts/*
      
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            src.tar.gz
-            src.zip
+            artifacts.tar.gz
+            artifacts.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
