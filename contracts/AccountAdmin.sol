@@ -6,6 +6,22 @@ contract AccountAdmin is Admin
 {
     address public superAdmin;
 
+    string public constant senderNotAdmin = "Sender is not an admin.";
+    string public constant notSuperAdmin = "Sender is not a super admin.";
+    string public constant adminQuarantined = "Admin is still under quarantine.";
+    string public constant invalidQuarantineTime = "Quarantine duration must be at least 1 day.";
+    string public constant quorumTypeNotFixed = "Quorum type is not fixed.";
+    string public constant fixedQuorumZero = "Quorum must be greater than zero.";
+    string public constant fixedQuorumInvalidNumber = "Quorum must be less than or equal to the number of admins.";
+    string public constant voteDurationInvalid = "Vote duration must be at least 1 day.";
+    string public constant superAdminNotZero = "There is already a super admin.";
+    string public constant notAdmin = "This address is not an admin, so cannot be a super admin.";
+    string public constant superAdminDoesntExist = "There is no a super admin to be removed.";
+    string public constant notSuperAdminRemoval = "It is only possible to remove an address which is super admin.";
+    string public constant alreadyVoted = "You've already voted for this proposal.";
+    string public constant noVotingProcess = "There is no current voting process.";
+    string public constant userDidntVote = "You do not have a active vote for this proposal.";
+
     // Quarantine
     uint256 public quarantine;
     mapping(address => uint256) public adminQuarantine;
@@ -32,13 +48,13 @@ contract AccountAdmin is Admin
 
     modifier onlyAdmin() 
     {
-        require(exists(msg.sender), "Sender is not an admin.");
+        require(exists(msg.sender), notAdmin);
         _;
     }
 
     modifier onlySuperAdmin()
     {
-        require(isSuperAdmin(msg.sender), "Sender is not a super user.");
+        require(isSuperAdmin(msg.sender), notSuperAdmin);
         _;
     }
 
@@ -86,8 +102,8 @@ contract AccountAdmin is Admin
 
     function addAdmin(address _address) public onlyAdmin returns (bool)
     {
-        require(!isQuarantined(msg.sender), "Admin is still in quarantine.");
-        require(!isQuarantined(_address), "Admin is still in quarantine.");
+        require(!isQuarantined(msg.sender), adminQuarantined);
+        require(!isQuarantined(_address), adminQuarantined);
 
         bool added = super.addAdmin(_address);
         if (added){
@@ -100,8 +116,8 @@ contract AccountAdmin is Admin
 
     function removeAdmin(address _address) public onlyAdmin returns (bool) 
     {
-        require(!isQuarantined(msg.sender), "Admin is still in quarantine.");
-        require(!isQuarantined(_address), "Admin is still in quarantine.");
+        require(!isQuarantined(msg.sender), adminQuarantined);
+        require(!isQuarantined(_address), adminQuarantined);
 
         bool removed = super.removeAdmin(_address);
         if (removed)
@@ -118,7 +134,7 @@ contract AccountAdmin is Admin
     }
 
     function setQuarantine(uint256 duration) public onlySuperAdmin {
-        require(duration >= 1 days, "Quarantine duration must be at least 1 day.");
+        require(duration >= 1 days, invalidQuarantineTime);
         quarantine = duration;
     }    
 
@@ -134,9 +150,9 @@ contract AccountAdmin is Admin
 
     function setFixedQuorumNumber(uint256 _fixedQuorum) public onlySuperAdmin 
     {
-        require(quorumType == QuorumType.FIXED, "Quorum type is not fixed.");
-        require(_fixedQuorum > 0, "Quorum must be greater than zero.");
-        require(_fixedQuorum <= size(), "Quorum must be less than or equal to the number of admins.");
+        require(quorumType == QuorumType.FIXED, quorumTypeNotFixed);
+        require(_fixedQuorum > 0, fixedQuorumZero);
+        require(_fixedQuorum <= size(), fixedQuorumInvalidNumber);
 
         fixedQuorum = _fixedQuorum;
         adjustQuorum();
@@ -160,13 +176,13 @@ contract AccountAdmin is Admin
 
     function setVoteDuration(uint256 duration) public onlySuperAdmin 
     {
-        require(duration >= 1 days, "Vote duration must be at least 1 day.");
+        require(duration >= 1 days, voteDurationInvalid);
         electionDuration = duration;
     }
 
     function voteForSuperAdmin (address superAddr) public onlyAdmin returns (bool) {
-        require(superAdmin == address(0), "There is already a super admin.");
-        require(exists(superAddr), "This address is not an admin, so cannot be a super admin.");
+        require(superAdmin == address(0), superAdminNotZero);
+        require(exists(superAddr), notAdmin);
 
         bool elected = vote(votesFor, superAddr);
         if (elected)
@@ -175,15 +191,15 @@ contract AccountAdmin is Admin
     }
 
     function revertVoteForSuperAdmin (address superAddr) public onlyAdmin  {
-        require(superAdmin == address(0), "There is already a super admin, so there is not currently a voting process.");
-        require(exists(superAddr), "This address is not an admin, so it was not voted.");
+        require(superAdmin == address(0), superAdminNotZero);
+        require(exists(superAddr), notAdmin);
 
         revertVote(votesFor, superAddr);
     }
 
     function voteForRemovingSuperAdmin (address superAddr) public onlyAdmin {
-        require(superAdmin != address(0), "There is no a super admin to be removed.");
-        require(superAdmin == superAddr, "It is only possible to remove an address which is super admin.");
+        require(superAdmin != address(0), superAdminDoesntExist);
+        require(superAdmin == superAddr, notSuperAdminRemoval);
 
         bool removed = vote(votesAgainst, superAddr);
         if (removed)
@@ -191,14 +207,14 @@ contract AccountAdmin is Admin
     }
 
     function revertVoteForRemovingSuperAdmin (address superAddr) public onlyAdmin {
-        require(superAdmin != address(0), "There is no a super admin to be removed.");
-        require(superAdmin == superAddr, "It is only possible to remove an address which is super admin.");
+        require(superAdmin != address(0), superAdminDoesntExist);
+        require(superAdmin == superAddr, notSuperAdminRemoval);
 
         revertVote(votesAgainst, superAddr);
     }
 
     function vote(mapping(address => Vote) storage votes, address superAddr) private returns(bool) {        
-        require(!votes[superAddr].voters[msg.sender], "You've already voted for this proposal.");
+        require(!votes[superAddr].voters[msg.sender], alreadyVoted);
 
         // If there is no current voting process or the voting process has expired, start a new one.
         if ((votes[superAddr].firstVoteTimestamp == 0) || (block.timestamp > votes[superAddr].firstVoteTimestamp + electionDuration)) {
@@ -227,8 +243,8 @@ contract AccountAdmin is Admin
     }
 
     function revertVote(mapping(address => Vote) storage votes, address superAddr) private {
-        require(votes[superAddr].count > 0, "There is no current voting process.");
-        require(votes[superAddr].voters[msg.sender], "You do not have a active vote for this proposal.");
+        require(votes[superAddr].count > 0, noVotingProcess);
+        require(votes[superAddr].voters[msg.sender], userDidntVote);
 
         votes[superAddr].voters[msg.sender] = false;
         votes[superAddr].count--;
