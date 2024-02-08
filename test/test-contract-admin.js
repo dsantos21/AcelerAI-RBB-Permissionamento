@@ -4,7 +4,7 @@ const IngressContract = artifacts.require('Ingress.sol');
 const Web3 = require('web3');
 const web3 = new Web3();
 
-// Contract keys
+// Contract keys !
 const RULES_NAME = "0x72756c6573000000000000000000000000000000000000000000000000000000";
 const ADMIN_NAME = "0x61646d696e697374726174696f6e000000000000000000000000000000000000";
 
