@@ -18,7 +18,8 @@
     "web3-utils": "^1.5.3"
   },
   "devDependencies": {
-    "truffle": "5.11.1"
+    "truffle": "5.11.1",
+    "@openzeppelin/test-helpers": "^0.5.10"
   },
   "repository": {
     "type": "git",
