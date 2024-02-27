@@ -19,7 +19,7 @@ contract("Contract permissioning", accounts => {
 
         admin = await AdminContract.new();
         await ingress.setContractAddress(ADMIN_NAME, admin.address);
-
+    
         rules = await RulesContract.new(ingress.address);
         await ingress.setContractAddress(RULES_NAME, rules.address);
     });
@@ -40,30 +40,79 @@ contract("Contract permissioning", accounts => {
     });
 
     it("should return false from isContractAdmin if the account is not an admin", async () => {
+        await rules.blockContract(contractAddr, { from: accounts[0] });
         assert.equal(await rules.isContractAdmin(contractAddr, contractAdmin1), false);
     });
 
     it("should return true from isContractAdmin if the account is an admin", async () => {
         await rules.blockContract(contractAddr, { from: accounts[0] });
+        // It needs to be permitted
+        await rules.addAccount(contractAdmin1, { from: accounts[0] });
         await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
         assert.equal(await rules.isContractAdmin(contractAddr, contractAdmin1), true);
+    });
+
+    it("should assure that only admins can block a contract", async () => {
+        let hasThrown = false;
+        try {
+            await rules.blockContract(contractAddr, { from: accounts[1] });
+        }
+        catch (error) {
+            hasThrown = true; // Set the flag to true if an error is thrown
+        }
+        if (!hasThrown) {
+            assert.fail("It should have failed because the sender is not an admin");
+        }
+    });
+
+    it("should assure that only admins can add a contract admin", async () => {
+        let hasThrown = false;
+        try {
+            await rules.blockContract(contractAddr, { from: accounts[0] });
+            await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[1] });
+        }
+        catch (error) {
+            hasThrown = true; // Set the flag to true if an error is thrown
+        }
+        if (!hasThrown) {
+            assert.fail("It should have failed because the sender is not an admin");
+        }
     });
 
     it("should return false from isContractAdmin if the account was removed from admin", async () => {
         // block contract
         await rules.blockContract(contractAddr, { from: accounts[0] });        
+        // It needs to be permited
+        await rules.addAccount(contractAdmin1, { from: accounts[0] });
         await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
         await rules.removeContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
         assert.equal(await rules.isContractAdmin(contractAddr, contractAdmin1), false);
     });
 
-    it("should not allow adding a contract admin if the contract is not blocked", async () => {
+    it ("should not allow removing a contract admin if the address is not an admin", async () => {
+        let hasThrown = false;
         try {
-            await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
-            assert.fail("It should have failed because the contract is not blocked");
+            await rules.blockContract(contractAddr, { from: accounts[0] });
+            await rules.removeContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
         }
         catch (error) {
-            assert.equal(error.reason, "Contract is not blocked");
+            hasThrown = true; // Set the flag to true if an error is thrown
+        }
+        if (!hasThrown) {
+            assert.fail("It should have failed because the address is not an admin");
+        }
+    });
+
+    it("should not allow adding a contract admin if the contract is not blocked", async () => {
+        let hasThrown = false;
+        try {
+            await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
+        }
+        catch (error) {
+            hasThrown = true; // Set the flag to true if an error is thrown
+        }
+        if (!hasThrown) {
+            assert.fail("It should have failed because the contract is not blocked");
         }
     });
 
@@ -95,5 +144,32 @@ contract("Contract permissioning", accounts => {
         expect(result).to.equal(true);
     });
 
+    it("should not allow adding a contract admin if the address is not permited", async () => {
+        let hasThrown = false;
+        try {
+            await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
+        }
+        catch (error) {
+            hasThrown = true; // Set the flag to true if an error is thrown
+        }
+        if (!hasThrown) {
+            assert.fail("It should have failed because the address is not permited");
+        }
+    });
+
+    if("should not allow a transaction if the sender is not permited, even if is an admin of the contract", async () => {
+        // Block contract
+        await rules.blockContract(contractAddr, { from: accounts[0] });
+        // Permit the address
+        await rules.addAccount(contractAdmin1, { from: accounts[0] });
+        // Add admin
+        await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
+        // Remove permission
+        await rules.removeAccount(contractAdmin1, { from: accounts[0] });
+        // Sender is an admin, but not permited.
+        const result = await rules.transactionAllowed(contractAdmin1, contractAddr, 0, 0, 0, '0x');
+
+        expect(result).to.equal(false);
+    });
 });
- 
+
