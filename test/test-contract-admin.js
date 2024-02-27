@@ -65,6 +65,20 @@ contract("Contract permissioning", accounts => {
         }
     });
 
+    it("should assure that only admins can unblock a contract", async () => {
+        let hasThrown = false;
+        try {
+            await rules.blockContract(contractAddr, { from: accounts[0] });
+            await rules.unblockContract(contractAddr, { from: accounts[1] });
+        }
+        catch (error) {
+            hasThrown = true; // Set the flag to true if an error is thrown
+        }
+        if (!hasThrown) {
+            assert.fail("It should have failed because the sender is not an admin");
+        }
+    });
+
     it("should assure that only admins can add a contract admin", async () => {
         let hasThrown = false;
         try {
