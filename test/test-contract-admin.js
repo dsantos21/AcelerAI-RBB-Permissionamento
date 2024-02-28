@@ -46,8 +46,6 @@ contract("Contract permissioning", accounts => {
 
     it("should return true from isContractAdmin if the account is an admin", async () => {
         await rules.blockContract(contractAddr, { from: accounts[0] });
-        // It needs to be permitted
-        await rules.addAccount(contractAdmin1, { from: accounts[0] });
         await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
         assert.equal(await rules.isContractAdmin(contractAddr, contractAdmin1), true);
     });
@@ -63,6 +61,13 @@ contract("Contract permissioning", accounts => {
         if (!hasThrown) {
             assert.fail("It should have failed because the sender is not an admin");
         }
+
+        // Make accounst[1] an admin
+        await admin.addAdmin(accounts[1], { from: accounts[0] });
+        
+        // Now it should be able to block contract
+        await rules.blockContract(contractAddr, { from: accounts[1] });
+        assert.equal(await rules.isBlocked(contractAddr), true);
     });
 
     it("should assure that only admins can unblock a contract", async () => {
@@ -77,6 +82,12 @@ contract("Contract permissioning", accounts => {
         if (!hasThrown) {
             assert.fail("It should have failed because the sender is not an admin");
         }
+
+        // Make accounst[1] an admin
+        await admin.addAdmin(accounts[1], { from: accounts[0] });
+        // Now it should be able to unblock contract
+        await rules.unblockContract(contractAddr, { from: accounts[1] });
+        assert.equal(await rules.isBlocked(contractAddr), false);
     });
 
     it("should assure that only admins can add a contract admin", async () => {
@@ -91,19 +102,22 @@ contract("Contract permissioning", accounts => {
         if (!hasThrown) {
             assert.fail("It should have failed because the sender is not an admin");
         }
+        // Make accounst[1] an admin
+        await admin.addAdmin(accounts[1], { from: accounts[0] });
+        // Now it should be able to add contract admin
+        await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[1] });
+        assert.equal(await rules.isContractAdmin(contractAddr, contractAdmin1), true);
     });
 
     it("should return false from isContractAdmin if the account was removed from admin", async () => {
         // block contract
         await rules.blockContract(contractAddr, { from: accounts[0] });        
-        // It needs to be permited
-        await rules.addAccount(contractAdmin1, { from: accounts[0] });
         await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
         await rules.removeContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
         assert.equal(await rules.isContractAdmin(contractAddr, contractAdmin1), false);
     });
 
-    it ("should not allow removing a contract admin if the address is not an admin", async () => {
+    it ("should not allow removing a contract admin if the address is not an contract admin", async () => {
         let hasThrown = false;
         try {
             await rules.blockContract(contractAddr, { from: accounts[0] });
@@ -132,12 +146,12 @@ contract("Contract permissioning", accounts => {
 
     it('should allow transaction if target is not blocked', async () => {
         // It is a fresh call, so there is no previously blocked contract.
-        // accounts[0] was permited in the constructor
+        // accounts[0] was permissioned in the constructor
         const result = await rules.transactionAllowed(accounts[0], contractAddr, 0, 0, 0, '0x');
         expect(result).to.equal(true);
     });
 
-    it('should return false if target (contract) is blocked and sender is not an admin', async () => {
+    it('should deny transaction if target (contract) is blocked and sender is not an admin of the contract', async () => {
         // Block contract
         await rules.blockContract(contractAddr, { from: accounts[0] });
         // There was no admin added, so sender is not an admin.
@@ -146,7 +160,7 @@ contract("Contract permissioning", accounts => {
         expect(result).to.equal(false);
     });
 
-    it('should return true if target (contract) is blocked but sender is an admin', async () => {
+    it('should allow transaction if target (contract) is blocked but sender is an admin and is permissioned', async () => {
         // Block contract
         await rules.blockContract(contractAddr, { from: accounts[0] });
         // Sender needs to be permited
@@ -158,32 +172,16 @@ contract("Contract permissioning", accounts => {
         expect(result).to.equal(true);
     });
 
-    it("should not allow adding a contract admin if the address is not permited", async () => {
-        let hasThrown = false;
-        try {
-            await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
-        }
-        catch (error) {
-            hasThrown = true; // Set the flag to true if an error is thrown
-        }
-        if (!hasThrown) {
-            assert.fail("It should have failed because the address is not permited");
-        }
-    });
-
-    if("should not allow a transaction if the sender is not permited, even if is an admin of the contract", async () => {
+    if("should not allow a transaction if the sender is not permissioned, even if is an admin of the contract", async () => {
         // Block contract
         await rules.blockContract(contractAddr, { from: accounts[0] });
-        // Permit the address
-        await rules.addAccount(contractAdmin1, { from: accounts[0] });
         // Add admin
         await rules.addContractAdmin(contractAddr, contractAdmin1, { from: accounts[0] });
-        // Remove permission
-        await rules.removeAccount(contractAdmin1, { from: accounts[0] });
-        // Sender is an admin, but not permited.
+        // Sender is an admin of the contract, but it is not permited.
         const result = await rules.transactionAllowed(contractAdmin1, contractAddr, 0, 0, 0, '0x');
 
         expect(result).to.equal(false);
     });
 });
+
 
