@@ -2,11 +2,12 @@ pragma solidity 0.5.9;
 
 import "./AccountRulesProxy.sol";
 import "./AccountRulesList.sol";
+import "./ContractRulesAdminProxy.sol";
 import "./AccountIngress.sol";
 import "./Admin.sol";
 
 
-contract AccountRules is AccountRulesProxy, AccountRulesList {
+contract AccountRules is AccountRulesProxy, AccountRulesList, ContractRulesAdminProxy {
 
     // in read-only mode rules can't be added/removed
     // this will be used to protect data when upgrading contracts
@@ -15,6 +16,10 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
     uint private version = 1000000;
 
     AccountIngress private ingressContract;
+
+    mapping(address => bool) public blockedContracts;
+    mapping(address => address) public contractsAdmins;
+
 
     modifier onlyOnEditMode() {
         require(!readOnlyMode, "In read only mode: rules cannot be modified");
@@ -58,15 +63,13 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
 
     function transactionAllowed(
         address sender,
-        address, // target
+        address target, // target
         uint256, // value
         uint256, // gasPrice
         uint256, // gasLimit
         bytes memory // payload
     ) public view returns (bool) {
-        if (
-            accountPermitted (sender)
-        ) {
+        if ((accountPermitted (sender) && !isBlocked(target)) || (accountPermitted (sender) && isBlocked(target) && isContractAdmin(target, sender)) ){
             return true;
         } else {
             return false;
@@ -110,4 +113,42 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
     function addAccounts(address[] memory accounts) public onlyAdmin returns (bool) {
         return addAll(accounts, msg.sender);
     }
+
+    function isContractAdmin(address _contract, address _admin) public view returns (bool) {
+        return contractsAdmins[_contract] == _admin;
+    }
+
+    function blockContract(address _contract) external onlyAdmin onlyOnEditMode {
+        blockedContracts[_contract] = true;
+    }
+
+    function unblockContract(address _contract) external onlyAdmin onlyOnEditMode {
+        blockedContracts[_contract] = false;
+    }
+
+    function isBlocked(address _contract) public view returns (bool) {
+        return blockedContracts[_contract];
+    }
+
+    function addContractAdmin(address _contract, address _admin) external onlyAdmin onlyOnEditMode {
+
+        bool isContractBlocked = isBlocked(_contract);
+
+         require(isContractBlocked == true, "Contract not Blocked");
+
+        contractsAdmins[_contract] = _admin;
+    }
+
+    function removeContractAdmin(address _contract, address _admin) external onlyAdmin onlyOnEditMode {
+         
+         bool isadmin = isContractAdmin(_contract, _admin);
+
+         require(isadmin == true, "Not a Contract Admin");
+
+
+        contractsAdmins[_contract] = address(0);
+    }
+
+
+
 }
