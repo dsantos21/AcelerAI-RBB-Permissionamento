@@ -4,9 +4,9 @@ import "./AccountRulesProxy.sol";
 import "./AccountRulesList.sol";
 import "./AccountIngress.sol";
 import "./Admin.sol";
+import "./ContractRulesAdminProxy.sol";
 
-
-contract AccountRules is AccountRulesProxy, AccountRulesList {
+contract AccountRules is AccountRulesProxy, AccountRulesList, ContractRulesAdminProxy {
 
     // in read-only mode rules can't be added/removed
     // this will be used to protect data when upgrading contracts
@@ -58,14 +58,15 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
 
     function transactionAllowed(
         address sender,
-        address, // target
+        address target,
         uint256, // value
         uint256, // gasPrice
         uint256, // gasLimit
         bytes memory // payload
     ) public view returns (bool) {
         if (
-            accountPermitted (sender)
+            accountPermitted (sender) && (
+                !isBlocked(target) || isContractAdmin(target, sender))
         ) {
             return true;
         } else {
@@ -109,5 +110,70 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
 
     function addAccounts(address[] memory accounts) public onlyAdmin returns (bool) {
         return addAll(accounts, msg.sender);
+    }
+
+    // Control blocked contracts with a set of authorized address that can run the blocked contract
+    address[] private blockedContracts;
+    mapping (address => address[]) private contractAdmins; 
+
+    function unblockContract(address _contract) public onlyAdmin {
+        for (uint i = 0; i < blockedContracts.length; i++) {
+            if (blockedContracts[i] == _contract) {
+                delete blockedContracts[i];
+                break;
+            }
+        }
+    }
+
+    function blockContract(address _contract) public onlyAdmin {
+        blockedContracts.push(_contract);
+        // If no admins exists, initialize admins list with empty array
+        if (contractAdmins[_contract].length == 0) {
+            contractAdmins[_contract] = new address[](0);
+        }
+    }
+
+    function isBlocked(address _contract) public view returns (bool) {
+        for (uint i = 0; i < blockedContracts.length; i++) {
+            if (blockedContracts[i] == _contract) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function isContractAdmin(address _contract, address _admin) public view returns (bool) {
+        for (uint i = 0; i < contractAdmins[_contract].length; i++) {
+            if (contractAdmins[_contract][i] == _admin) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * should not allow adding a contract admin if the contract is not blocked
+     * @param _contract 
+     * @param _admin 
+     */
+    function addContractAdmin(address _contract, address _admin) public onlyAdmin {
+        require(!isContractAdmin(_contract, _admin), "Admin already exists for this contract");
+        require(isBlocked(_contract), "Contract is not blocked");
+        contractAdmins[_contract].push(_admin);
+    }
+
+    /**
+     * should not allow removing a contract admin if the address is not an contract admin
+     * @param _contract 
+     * @param _admin 
+     */
+    function removeContractAdmin(address _contract, address _admin) public onlyAdmin {
+        require(isContractAdmin(_contract, _admin), "Admin does not exists for this contract");
+        for (uint i = 0; i < contractAdmins[_contract].length; i++) {
+            if (contractAdmins[_contract][i] == _admin) {
+                delete contractAdmins[_contract][i];
+                break;
+            }
+        }
     }
 }
