@@ -23,12 +23,7 @@ contract Admin is AdminProxy, AdminList {
         return exists(_address);
     }
 
-    struct QuarantineAdminInfo {
-        address adminQuarentined;
-        uint timestampStartOfQuarentine;
-    }
-
-    QuarantineAdminInfo[] private quarantinedAdmins;
+    mapping(address => uint) private quarantinedAdmins;
 
     /**
      * @dev Adds an admin account to the quarantined list.
@@ -40,13 +35,7 @@ contract Admin is AdminProxy, AdminList {
      * - The caller must be an admin.
      */
     function addAdminToQuarentineds(address _address, uint _timestamp) public onlyAdmin {
-        for (uint256 i = 0; i < quarantinedAdmins.length; i++) {
-            if (quarantinedAdmins[i].adminQuarentined == _address) {
-                quarantinedAdmins[i].timestampStartOfQuarentine = _timestamp;
-                return;
-            }
-        }
-        quarantinedAdmins.push(QuarantineAdminInfo(_address, _timestamp));
+        quarantinedAdmins[_address] = _timestamp;
     }
 
     /**
@@ -54,32 +43,26 @@ contract Admin is AdminProxy, AdminList {
      * @param _address The address of the account to be removed from the quarantined list.
      */
     function removeAdminFromQuarentineds(address _address) internal {
-        for (uint256 i = 0; i < quarantinedAdmins.length; i++) {
-            if (quarantinedAdmins[i].adminQuarentined == _address) {
-                delete quarantinedAdmins[i];
-                return;
-            }
-        }
+        delete quarantinedAdmins[_address];
     }
 
     /**
-     * Check if the admin is quarentined, reading the quarantinedAdmins list.
-     * The admin should be considered quarentined if it's in the list and the timestampStartOfQuarentine
+     * Check if the admin is quarentined, reading the quarantinedAdmins mapping.
+     * The admin should be considered quarentined if it's in the mapping and the timestampStartOfQuarentine
      * is less than 1 day.
-     * Also, if it is in the list and the timestampStartOfQuarentine is more than 1 day, 
-     * the admin should be removed from the list, returning to the normal state.
+     * Also, if it is in the mapping and the timestampStartOfQuarentine is more than 1 day, 
+     * the admin should be removed from the mapping, returning to the normal state.
      * @param _address The address of the account to be checked.
      * @return A boolean indicating whether the admin account is quarentined.
      */
     function isAdminQuarentined(address _address) public returns (bool) {
-        for (uint256 i = 0; i < quarantinedAdmins.length; i++) {
-            if (quarantinedAdmins[i].adminQuarentined == _address) {
-                if (block.timestamp - quarantinedAdmins[i].timestampStartOfQuarentine < 1 days) {
-                    return true;
-                }
+        if (quarantinedAdmins[_address] > 0) {
+            if (block.timestamp - quarantinedAdmins[_address] < 1 days) {
+                return true;
+            } else {
+                removeAdminFromQuarentineds(_address);
             }
         }
-        removeAdminFromQuarentineds(_address);
         return false;
     }
 
