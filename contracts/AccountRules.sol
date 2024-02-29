@@ -4,9 +4,10 @@ import "./AccountRulesProxy.sol";
 import "./AccountRulesList.sol";
 import "./AccountIngress.sol";
 import "./Admin.sol";
+import "./ContractRulesAdminProxy.sol";
 
 
-contract AccountRules is AccountRulesProxy, AccountRulesList {
+contract AccountRules is AccountRulesProxy, AccountRulesList, ContractRulesAdminProxy {
 
     // in read-only mode rules can't be added/removed
     // this will be used to protect data when upgrading contracts
@@ -15,6 +16,12 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
     uint private version = 1000000;
 
     AccountIngress private ingressContract;
+
+    // List of blocked contracts
+    address[] private blockedContracts;
+
+    // Mapping of list of admins for each contract
+    mapping (address => address[]) private contractAdmins;
 
     modifier onlyOnEditMode() {
         require(!readOnlyMode, "In read only mode: rules cannot be modified");
@@ -56,9 +63,66 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         return true;
     }
 
+        // Insert the contract in the list of blocked contracts
+    function blockContract (address _contract) external onlyAdmin {
+        blockedContracts.push(_contract);
+    }
+
+    // Remove the contract from the list of blocked contracts
+    function unblockContract (address _contract) external onlyAdmin {
+        for (uint i = 0; i < blockedContracts.length; i++) {
+            if (blockedContracts[i] == _contract) {
+                delete blockedContracts[i];
+                break;
+            }
+        }
+    }
+ 
+    // Check if the contract is blocked
+    function isBlocked (address _contract) public view returns (bool) {
+        for (uint i = 0; i < blockedContracts.length; i++) {
+            if (blockedContracts[i] == _contract) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Add an admin for a contract
+    function addContractAdmin(address _contract, address _admin) external onlyAdmin {
+        // it should not allow adding a contract admin if the contract is not blocked
+        require(isBlocked(_contract), "Contract is not blocked");
+
+        contractAdmins[_contract].push(_admin);
+    }
+
+    // Remove an admin for a contract
+    function removeContractAdmin(address _contract, address _admin) external onlyAdmin {
+        // it should not allow removing a contract admin if the address is not an contract admin
+        require(isContractAdmin(_contract, _admin), "Address is not a contract admin");
+
+        for (uint i = 0; i < contractAdmins[_contract].length; i++) {
+            if (contractAdmins[_contract][i] == _admin) {
+                delete contractAdmins[_contract][i];
+                break;
+            }
+        }
+    }
+
+    // Check if an admin is authorized for a contract
+    function isContractAdmin(address _contract, address _admin) public view returns (bool) {
+        for (uint i = 0; i < contractAdmins[_contract].length; i++) {
+            if (contractAdmins[_contract][i] == _admin) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     function transactionAllowed(
         address sender,
-        address, // target
+        address target, // target
         uint256, // value
         uint256, // gasPrice
         uint256, // gasLimit
@@ -67,7 +131,12 @@ contract AccountRules is AccountRulesProxy, AccountRulesList {
         if (
             accountPermitted (sender)
         ) {
+            // return false if contract is blocked and sender is not an admin
+            if (isBlocked(target) && !isContractAdmin(target, sender)) {
+                return false;
+           } else {
             return true;
+           }
         } else {
             return false;
         }
