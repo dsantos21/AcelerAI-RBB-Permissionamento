@@ -19,23 +19,19 @@ contract Admin is AdminProxy, AdminList {
     /**
      * add an address to the quarentena list
      * @param _address address to be added to the quarentena list
-     * @param start start date of the quarentena
      */
-    function addQuarentena(address _address, uint start) public returns (bool) {
-        if (start==0) {
-            start = now;
-        }
+    function addQuarentena(address _address) public returns (bool) {
         uint length = quarentenaList.length;
         for (uint i = 0; i < length; i++) {
             if (quarentenaList[i]._address == _address) {
                 // update
-                quarentenaList[i].expires = start + 1 days;
+                quarentenaList[i].expires = now + 1 days;
                 //sanitizeQuarentena();
                 return true;
             }
         }
         // add
-        quarentenaList.push(quarentena(_address, start + 1 days));
+        quarentenaList.push(quarentena(_address, now + 1 days));
         //sanitizeQuarentena();
         return true;
     }
@@ -65,10 +61,10 @@ contract Admin is AdminProxy, AdminList {
     function emQuarentena (address _address) public view returns (bool) {
         uint length = quarentenaList.length;
         for (uint i = 0; i < length; i++) {
+            // endereco em quarentena. eh o endereco informado?
             // verify if now is greater than the date of the quarentena
-            if (quarentenaList[i].expires > now) {
-                // endereco em quarentena. eh o endereco informado?
-                if (quarentenaList[i]._address == _address) {
+            if (quarentenaList[i]._address == _address) {
+                if (quarentenaList[i].expires > now) {
                     return true;
                 }
             }
@@ -134,8 +130,8 @@ contract Admin is AdminProxy, AdminList {
             string memory message = result ? "Admin account added successfully" : "Account is already an Admin";
             emit AdminAdded(result, _address, msg.sender, block.timestamp, message);
             // add msg.sender to quarantine 
-            addQuarentena(msg.sender, now);
-            addQuarentena(_address, now);
+            addQuarentena(msg.sender);
+            addQuarentena(_address);
             return result;
         }
 
@@ -148,7 +144,7 @@ contract Admin is AdminProxy, AdminList {
         bool removed = remove(_address);
         emit AdminRemoved(removed, _address, msg.sender, block.timestamp);
         // add msg.sender to quarantine 
-        addQuarentena(msg.sender, now);
+        addQuarentena(msg.sender);
         return removed;
     }
 
