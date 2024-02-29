@@ -18,7 +18,7 @@ contract AccountRules is AccountRulesProxy, AccountRulesList, ContractRulesAdmin
     AccountIngress private ingressContract;
 
     mapping(address => bool) public blockedContracts;
-    mapping(address => address) public contractsAdmins;
+    mapping(address => address[]) public contractsAdmins;
 
 
     modifier onlyOnEditMode() {
@@ -115,7 +115,13 @@ contract AccountRules is AccountRulesProxy, AccountRulesList, ContractRulesAdmin
     }
 
     function isContractAdmin(address _contract, address _admin) public view returns (bool) {
-        return contractsAdmins[_contract] == _admin;
+    // Check if the admin is in the array of admins for the contract
+    for(uint i = 0; i < contractsAdmins[_contract].length; i++) {
+        if (contractsAdmins[_contract][i] == _admin) {
+            return true;
+        }
+    }
+    return false;
     }
 
     function blockContract(address _contract) external onlyAdmin onlyOnEditMode {
@@ -131,24 +137,31 @@ contract AccountRules is AccountRulesProxy, AccountRulesList, ContractRulesAdmin
     }
 
     function addContractAdmin(address _contract, address _admin) external onlyAdmin onlyOnEditMode {
+    
+    bool isContractBlocked = isBlocked(_contract);
+    require(isContractBlocked, "Contract is not blocked");
 
-        bool isContractBlocked = isBlocked(_contract);
+    // Check if the function caller is already an admin of the contract
+    for(uint i = 0; i < contractsAdmins[_contract].length; i++) {
+        require(msg.sender != contractsAdmins[_contract][i], "Caller is already an admin");
+    }
 
-         require(isContractBlocked == true, "Contract not Blocked");
-
-        contractsAdmins[_contract] = _admin;
+    // Add the new admin to the contract
+    contractsAdmins[_contract].push(_admin);
     }
 
     function removeContractAdmin(address _contract, address _admin) external onlyAdmin onlyOnEditMode {
-         
-         bool isadmin = isContractAdmin(_contract, _admin);
-
-         require(isadmin == true, "Not a Contract Admin");
-
-
-        contractsAdmins[_contract] = address(0);
+    // Find the admin in the array of admins for the contract
+    for(uint i = 0; i < contractsAdmins[_contract].length; i++) {
+        if (contractsAdmins[_contract][i] == _admin) {
+            // Remove the admin from the array by moving the last element to this spot and shortening the array
+            contractsAdmins[_contract][i] = contractsAdmins[_contract][contractsAdmins[_contract].length - 1];
+            contractsAdmins[_contract].pop();
+            return;
+        }
     }
-
-
-
+    // If the function hasn't returned yet, the admin was not found
+    revert("Admin not found");
 }
+}
+
